@@ -31,7 +31,7 @@ CKEDITOR.plugins.add('taounderline', {
         }));
 
         editor.ui.addButton('TaoUnderline', {
-            label : 'Underline',
+            label : editor.lang[commandName].button,
             command : commandName,
             icon : this.path + 'images/taounderline.png'
         });
