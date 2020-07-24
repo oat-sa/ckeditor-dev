@@ -1,4 +1,4 @@
-CKEDITOR.plugins.setLang( 'insertQtiMedia', 'de', {
+CKEDITOR.plugins.setLang( 'removeTab', 'de', {
 	button: 'Medien einfügen',
 	title: 'Medien einfügen'
 } );
