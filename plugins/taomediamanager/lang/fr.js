@@ -1,4 +1,4 @@
 CKEDITOR.plugins.setLang( 'insertMedia', 'fr', {
-	button: 'Insérer une expression mathémat',
-	title: 'Insérer une expression mathémat'
+	button: 'Insérer un média',
+	title: 'Insérer un média'
 } );
