@@ -1,4 +1,5 @@
 CKEDITOR.plugins.add('taounderline', {
+	lang: 'de,en,fr,nl', // %REMOVE_LINE_CORE%
     init : function(editor){
 
         var commandName = 'spanUnderline',
@@ -30,7 +31,7 @@ CKEDITOR.plugins.add('taounderline', {
         }));
 
         editor.ui.addButton('TaoUnderline', {
-            label : 'Underline',
+            label : editor.lang[commandName].button,
             command : commandName,
             icon : this.path + 'images/taounderline.png'
         });
