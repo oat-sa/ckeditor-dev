@@ -13,7 +13,7 @@ CKEDITOR.plugins.add('taoqtiprintedvariable', {
         });
 
         editor.ui.addButton('TaoQtiPrintedVariable', {
-            label: 'Insert Printed Variable',
+            label: editor.lang.insertQtiPrintedVariable.button,
             command: 'insertQtiPrintedVariable',
             icon: this.path + 'images/taoqtiprintedvariable.png'
         });
