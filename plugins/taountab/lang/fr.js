@@ -1,4 +1,4 @@
 CKEDITOR.plugins.setLang( 'removeTab', 'fr', {
-	button: 'Insérer un média',
-	title: 'Insérer un média'
+	button: 'Retirer une tabulation',
+	title: 'Retirer une tabulation'
 } );
