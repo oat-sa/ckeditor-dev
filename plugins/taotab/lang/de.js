@@ -1,4 +1,4 @@
 CKEDITOR.plugins.setLang( 'insertTab', 'de', {
-	button: 'Medien einfügen',
-	title: 'Medien einfügen'
+	button: 'Registerkarte einfügen',
+	title: 'Registerkarte einfügen'
 } );

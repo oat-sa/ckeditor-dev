@@ -1,4 +1,4 @@
 CKEDITOR.plugins.setLang( 'removeTab', 'de', {
-	button: 'Medien einfügen',
-	title: 'Medien einfügen'
+	button: 'Tab entfernen',
+	title: 'Tab entfernen'
 } );

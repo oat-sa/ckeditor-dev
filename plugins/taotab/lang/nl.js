@@ -1,4 +1,4 @@
 CKEDITOR.plugins.setLang( 'insertTab', 'nl', {
-	button: 'Invoegmedia',
-	title: 'Invoegmedia'
+	button: 'Tab invoegen',
+	title: 'Tab invoegen'
 } );

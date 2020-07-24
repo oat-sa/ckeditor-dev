@@ -1,4 +1,4 @@
 CKEDITOR.plugins.setLang( 'removeTab', 'nl', {
-	button: 'Invoegmedia',
-	title: 'Invoegmedia'
+	button: 'Tabblad verwijderen',
+	title: 'Tabblad verwijderen'
 } );
