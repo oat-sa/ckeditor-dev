@@ -1,4 +1,4 @@
 CKEDITOR.plugins.setLang( 'insertQtiPrintedVariable', 'nl', {
-	button: 'Wiskundige uitdrukking invoegen',
-	title: 'Wiskundige uitdrukking invoegen'
+	button: 'Bedrukte Variabele invoegen',
+	title: 'Bedrukte Variabele invoegen'
 } );

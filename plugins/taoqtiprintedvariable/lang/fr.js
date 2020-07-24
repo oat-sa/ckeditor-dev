@@ -1,4 +1,4 @@
 CKEDITOR.plugins.setLang( 'insertQtiPrintedVariable', 'fr', {
-	button: 'Insérer une expression mathémat',
-	title: 'Insérer une expression mathémat'
+	button: 'Insérer la variable imprimée',
+	title: 'Insérer la variable imprimée'
 } );
