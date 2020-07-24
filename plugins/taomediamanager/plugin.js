@@ -5,6 +5,7 @@
 CKEDITOR.plugins.add('taomediamanager', {
     // The plugin initialization logic goes inside this method.
     // http://docs.cksource.com/ckeditor_api/symbols/CKEDITOR.pluginDefinition.html#init
+	lang: 'de,en,fr,nl', // %REMOVE_LINE_CORE%
     init: function (editor) {
         // Define an editor command that inserts a taomediamanager.
         // http://docs.cksource.com/ckeditor_api/symbols/CKEDITOR.editor.html#addCommand
@@ -37,7 +38,7 @@ CKEDITOR.plugins.add('taomediamanager', {
         // http://docs.cksource.com/ckeditor_api/symbols/CKEDITOR.ui.html#addButton
         editor.ui.addButton('TaoMediaManager', {
             // Toolbar button tooltip.
-            label: 'Insert Media',
+            label: editor.lang.insertMedia.button,
             // Reference to the plugin command name.
             command: 'insertMedia',
             // Button's icon file path.

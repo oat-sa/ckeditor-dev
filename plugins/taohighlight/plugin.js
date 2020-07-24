@@ -1,4 +1,5 @@
 CKEDITOR.plugins.add('taohighlight', {
+	lang: 'de,en,fr,nl', // %REMOVE_LINE_CORE%
     init : function(editor){
 		'use strict';
 
@@ -23,7 +24,7 @@ CKEDITOR.plugins.add('taohighlight', {
         }));
 
         editor.ui.addButton('TaoHighlight', {
-            label : 'Highlight',
+            label : editor.lang[commandName].button,
             command : commandName,
             icon : this.path + 'images/taohighlight.png'
         });
