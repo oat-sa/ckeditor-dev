@@ -64,7 +64,7 @@ CKEDITOR.lang[ 'ja' ] = {
 		advancedTab: '高度な設定',
 		validateNumberFailed: '値が数値ではありません',
 		confirmNewPage: '変更内容を保存せず、 新しいページを開いてもよろしいでしょうか？',
-		confirmCancel: 'オプション設定を変更しました。ダイアログを閉じてもよろしいでしょうか？',
+		confirmCancel: 'いくつかのオプションを変更しました。ダイアログウィンドウを閉じてもよろしいですか？',
 		options: 'オプション',
 		target: 'ターゲット',
 		targetNew: '新しいウインドウ (_blank)',
