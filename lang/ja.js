@@ -64,7 +64,7 @@ CKEDITOR.lang[ 'ja' ] = {
 		advancedTab: '高度な設定',
 		validateNumberFailed: '値が数値ではありません',
 		confirmNewPage: '変更内容を保存せず、 新しいページを開いてもよろしいでしょうか？',
-		confirmCancel: 'オプション設定を変更しました。ダイアログを閉じてもよろしいでしょうか？',
+                confirmCancel: 'いくつかのオプションを変更しました。ダイアログウィンドウを閉じてもよろしいですか？',
 		options: 'オプション',
 		target: 'ターゲット',
 		targetNew: '新しいウインドウ (_blank)',
@@ -97,6 +97,7 @@ CKEDITOR.lang[ 'ja' ] = {
 		invalidHtmlLength: '入力された "%1" 項目の値は、HTMLの大きさ(px または %)が正しいものである/ないに関わらず、正の値である必要があります。',
 		invalidInlineStyle: '入力されたインラインスタイルの値は、"名前 : 値" のフォーマットのセットで、複数の場合はセミコロンで区切られている形式である必要があります。',
 		cssLengthTooltip: 'ピクセル数もしくはCSSにセットできる数値を入力してください。(px,%,in,cm,mm,em,ex,pt,or pc)',
+                invalidRows: '行数は 0 より大きい値にしてください。',
 
 		// Put the voice-only part of the label in the span.
 		unavailable: '%1<span class="cke_accessibility">, 利用不可能</span>',
