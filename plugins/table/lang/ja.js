@@ -56,7 +56,7 @@ CKEDITOR.plugins.setLang( 'table', 'ja', {
 	invalidCellSpacing: 'セル間余白は数値で入力してください。',
 	invalidCols: '列数は0より大きな数値を入力してください。',
 	invalidHeight: '高さは数値で入力してください。',
-	invalidRows: '行数は0より大きな数値を入力してください。',
+	invalidRows: '行数は0より大きい値にしてください。',
 	invalidWidth: '幅は数値で入力してください。',
 	menu: '表のプロパティ',
 	row: {
