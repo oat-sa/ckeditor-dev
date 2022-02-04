@@ -1831,7 +1831,7 @@ legend.cke_voice_label {
     color: white;
 }
 
-.cke_editable:focus .cke_table-faked-selection {
+.cke_editable:focus .qti-table .cke_table-faked-selection {
     /* We have to use !important here, as td might specify it's own background, thus table selection
 	would not be visible. */
     background: #b3d4fc !important;
