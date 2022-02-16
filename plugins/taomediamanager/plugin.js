@@ -5,7 +5,7 @@
 CKEDITOR.plugins.add('taomediamanager', {
     // The plugin initialization logic goes inside this method.
     // http://docs.cksource.com/ckeditor_api/symbols/CKEDITOR.pluginDefinition.html#init
-	lang: 'de,en,fr,nl', // %REMOVE_LINE_CORE%
+	lang: 'de,en,fr,ja,nl', // %REMOVE_LINE_CORE%
     init: function (editor) {
         // Define an editor command that inserts a taomediamanager.
         // http://docs.cksource.com/ckeditor_api/symbols/CKEDITOR.editor.html#addCommand
