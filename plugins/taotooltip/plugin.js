@@ -1,5 +1,5 @@
 CKEDITOR.plugins.add('taotooltip', {
-	lang: 'de,en,fr,nl', // %REMOVE_LINE_CORE%
+	lang: 'de,en,fr,ja,nl', // %REMOVE_LINE_CORE%
 	init: function (editor) {
 		'use strict';
 
