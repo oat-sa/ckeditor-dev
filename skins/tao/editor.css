@@ -20,6 +20,7 @@ Usage:
 - linear-gradient((color1 0%, color2 30%, color3 80%)) - returns linear-gradient with manually distributed colors,
    first param - color, second - position. Also you can use px or other valid units for set position.
 */
+/* based on "visually-hidden" mixin in LDS for accessibility goals */
 /* Do not edit */
 /* "Reset" styles, necessary to avoid the editor UI being broken by external CSS. */
 /*
@@ -52,6 +53,7 @@ Usage:
 - linear-gradient((color1 0%, color2 30%, color3 80%)) - returns linear-gradient with manually distributed colors,
    first param - color, second - position. Also you can use px or other valid units for set position.
 */
+/* based on "visually-hidden" mixin in LDS for accessibility goals */
 /* Do not edit */
 /* Reset for single elements, not their children. */
 .cke_reset {
@@ -364,6 +366,7 @@ Usage:
 - linear-gradient((color1 0%, color2 30%, color3 80%)) - returns linear-gradient with manually distributed colors,
    first param - color, second - position. Also you can use px or other valid units for set position.
 */
+/* based on "visually-hidden" mixin in LDS for accessibility goals */
 /* Do not edit */
 /* The box that holds an IFRAME. It's inserted into a host document and positioned
    absolutely by the application. It floats above the host document/editor. */
@@ -691,6 +694,7 @@ Usage:
 - linear-gradient((color1 0%, color2 30%, color3 80%)) - returns linear-gradient with manually distributed colors,
    first param - color, second - position. Also you can use px or other valid units for set position.
 */
+/* based on "visually-hidden" mixin in LDS for accessibility goals */
 /* Do not edit */
 /* The box that holds each toolbar. */
 .cke_toolbar {
@@ -1155,6 +1159,7 @@ Usage:
 - linear-gradient((color1 0%, color2 30%, color3 80%)) - returns linear-gradient with manually distributed colors,
    first param - color, second - position. Also you can use px or other valid units for set position.
 */
+/* based on "visually-hidden" mixin in LDS for accessibility goals */
 /* Do not edit */
 /* The box that hold the entire combo widget */
 .cke_combo {
@@ -1429,6 +1434,7 @@ Usage:
 - linear-gradient((color1 0%, color2 30%, color3 80%)) - returns linear-gradient with manually distributed colors,
    first param - color, second - position. Also you can use px or other valid units for set position.
 */
+/* based on "visually-hidden" mixin in LDS for accessibility goals */
 /* Do not edit */
 /* "Source" button label */
 .cke_button__source_label,
@@ -1466,6 +1472,7 @@ Usage:
 - linear-gradient((color1 0%, color2 30%, color3 80%)) - returns linear-gradient with manually distributed colors,
    first param - color, second - position. Also you can use px or other valid units for set position.
 */
+/* based on "visually-hidden" mixin in LDS for accessibility goals */
 /* Do not edit */
 [class^="icon-"], [class*=" icon-"] {
     text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
@@ -1538,6 +1545,7 @@ Usage:
 - linear-gradient((color1 0%, color2 30%, color3 80%)) - returns linear-gradient with manually distributed colors,
    first param - color, second - position. Also you can use px or other valid units for set position.
 */
+/* based on "visually-hidden" mixin in LDS for accessibility goals */
 /* Do not edit */
 .cke .cke_top .cke_toolbar .cke_button_icon {
     background-image: none !important;
