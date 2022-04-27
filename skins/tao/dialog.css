@@ -44,6 +44,7 @@ Usage:
 - linear-gradient((color1 0%, color2 30%, color3 80%)) - returns linear-gradient with manually distributed colors,
    first param - color, second - position. Also you can use px or other valid units for set position.
 */
+/* based on "visually-hidden" mixin in LDS for accessibility goals */
 /* Do not edit */
 /* Tao specific stuff */
 /*
@@ -53,6 +54,7 @@ Usage:
 - linear-gradient((color1 0%, color2 30%, color3 80%)) - returns linear-gradient with manually distributed colors,
    first param - color, second - position. Also you can use px or other valid units for set position.
 */
+/* based on "visually-hidden" mixin in LDS for accessibility goals */
 /* Do not edit */
 [class^="icon-"], [class*=" icon-"] {
     text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
