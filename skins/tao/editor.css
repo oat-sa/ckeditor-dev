@@ -383,16 +383,22 @@ Usage:
     border-radius: 3px;
     box-shadow: 0 0 3px rgba(0, 0, 0, 0.15);
     font-size: 14px;
+    visibility: hidden;
+}
+
+.cke_panel_visible {
+    visibility: visible;
 }
 
 /* This class represents panels which are used as context menus. */
 .cke_menu_panel {
     padding: 0;
     margin: 0;
-    background-color: #fff;
+    background-color: white;
     border: 1px solid #ddd;
     border-radius: 2px;
     box-shadow: none;
+    max-height: 60vh;
 }
 
 /* This class represents panels which are used by rich combos. */
@@ -412,7 +418,7 @@ Usage:
 
 /* The HTML document which is a direct descendant of the IFRAME */
 .cke_panel_container {
-    overflow: hidden;
+    overflow-y: scroll !important;
 }
 
 /*
@@ -727,6 +733,7 @@ Usage:
     border-radius: 2px;
     border-radius: 1px;
     background: white;
+    display: flex;
 }
 
 .cke_hc .cke_toolgroup {
@@ -831,11 +838,15 @@ a.cke_button_disabled:active {
     vertical-align: middle;
     float: left;
     cursor: default;
-    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 
 .cke_button_label.cke_button__language_label {
     display: block;
+    cursor: pointer;
+}
+
+.cke_button__language {
+    cursor: pointer;
 }
 
 .cke_button__language_icon {
@@ -1007,29 +1018,30 @@ Special outer level classes used in this file:
     /* The "button" inside a menu item is a <a> element.
      Transforms it into a block. */
     display: block;
-    color: #222222;
-    padding: 3px 7px 4px;
+    color: #222;
+    padding: 5px 7px;
+    cursor: pointer;
 }
 
-.cke_menuitem span {
-    /* Avoid the text selection cursor inside menu items. */
-    cursor: default;
+.cke_menubutton .cke_menubutton_label {
+    cursor: pointer;
 }
 
 .cke_menubutton:hover,
 .cke_menubutton:focus,
 .cke_menubutton:active {
     background: #3e7da7;
-    color: #fff;
+    color: white;
     display: block;
     outline: none;
+    cursor: pointer;
 }
 
 .cke_menubutton:hover:after,
 .cke_menubutton:focus:after,
 .cke_menubutton:active:after {
-    color: #fff;
-    border-color: #fff;
+    color: white;
+    border-color: white;
 }
 
 .cke_menubutton__language_ckb-ir,
@@ -1055,7 +1067,7 @@ Special outer level classes used in this file:
     border: #ada194 1px solid;
     border-radius: 2px;
     font-size: 10px;
-    top: 4px;
+    top: 7px;
     right: 5px;
     line-height: 12px;
     padding: 0 4px;
