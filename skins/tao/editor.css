@@ -1027,9 +1027,22 @@ Special outer level classes used in this file:
     cursor: pointer;
 }
 
+.cke_menubutton:active,
+.cke_menubutton:focus {
+    outline: none;
+    background-color: #f2f2f2;
+    color: #222;
+}
+
+.cke_menubutton:active:after,
+.cke_menubutton:focus:after {
+    color: #ada194;
+    border-color: #ada194;
+}
+
 .cke_menubutton:hover,
-.cke_menubutton:focus,
-.cke_menubutton:active {
+.cke_menubutton_on,
+.cke_menubutton_on:focus {
     background: #3e7da7;
     color: white;
     display: block;
@@ -1038,8 +1051,8 @@ Special outer level classes used in this file:
 }
 
 .cke_menubutton:hover:after,
-.cke_menubutton:focus:after,
-.cke_menubutton:active:after {
+.cke_menubutton_on:after,
+.cke_menubutton_on:focus:after {
     color: white;
     border-color: white;
 }
@@ -1133,12 +1146,6 @@ Special outer level classes used in this file:
     /* Greyed label text indicates a disabled menu item. */
     opacity: 0.3;
     filter: alpha(opacity=30);
-}
-
-.cke_menubutton_on {
-    border: 1px solid #dedede;
-    background-color: #f2f2f2;
-    box-shadow: 0 0 2px rgba(0, 0, 0, 0.1) inset;
 }
 
 .cke_menubutton_on .cke_menubutton_icon {
