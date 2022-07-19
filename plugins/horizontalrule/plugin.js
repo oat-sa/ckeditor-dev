@@ -44,7 +44,7 @@
             function getEditableHrs(){
             	var editable = editor.editable();
             	if (editable) {
-					editable.$.querySelectorAll('hr');
+					return editable.$.querySelectorAll('hr');
             	}
             	return [];
             }
@@ -78,7 +78,7 @@
             });
             editor.on('contentDomUnload', function(){
                 removeSelectionClass(getEditableHrs());
-                document.removeListener('selectionchange', handleSelection);
+                document.removeEventListener('selectionchange', handleSelection);
             });
             //end changes
 		}
