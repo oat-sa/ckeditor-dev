@@ -38,49 +38,49 @@
 				toolbar: 'insert,40'
 			} );
 
-            //changes made by OAT-SA 2022
-            //add a class to <hr> tags when they're part of a text selection
-            var selectionClass = 'text-selected';
-            function getEditableHrs(){
-            	var editable = editor.editable();
-            	if (editable) {
+			//changes made by OAT-SA 2022
+			//add a class to <hr> tags when they're part of a text selection
+			var selectionClass = 'text-selected';
+			function getEditableHrs(){
+				var editable = editor.editable();
+				if (editable) {
 					return editable.$.querySelectorAll('hr');
-            	}
-            	return [];
-            }
-            function removeSelectionClass(hrs) {
-            	if(hrs && hrs.length) {
+				}
+				return [];
+			}
+			function removeSelectionClass(hrs) {
+				if(hrs && hrs.length) {
 					hrs.forEach(function(hr){
 						hr.classList.remove(selectionClass);
 					});
-                }
-            }
-            function handleSelection() {
-            	var selection;
-            	var range;
-                var hrs = getEditableHrs();
-                if (hrs.length) {
-                    removeSelectionClass(hrs);
+				}
+			}
+			function handleSelection() {
+				var selection;
+				var range;
+				var hrs = getEditableHrs();
+				if (hrs.length) {
+					removeSelectionClass(hrs);
 
-                    selection = document.getSelection();
-                    range = selection.getRangeAt(0);
-                    if (range && !range.collapsed) {
-                    	hrs.forEach(function(hr) {
-                            if (range.intersectsNode(hr)) {
-                                hr.classList.add(selectionClass);
-                            }
-                        });
-                    }
-                }
-            }
-            editor.on('contentDom', function(){
-                document.addEventListener('selectionchange', handleSelection);
-            });
-            editor.on('contentDomUnload', function(){
-                removeSelectionClass(getEditableHrs());
-                document.removeEventListener('selectionchange', handleSelection);
-            });
-            //end changes
+					selection = document.getSelection();
+					range = selection.getRangeAt(0);
+					if (range && !range.collapsed) {
+						hrs.forEach(function(hr) {
+							if (range.intersectsNode(hr)) {
+								hr.classList.add(selectionClass);
+							}
+						});
+					}
+				}
+			}
+			editor.on('contentDom', function(){
+				document.addEventListener('selectionchange', handleSelection);
+			});
+			editor.on('contentDomUnload', function(){
+				removeSelectionClass(getEditableHrs());
+				document.removeEventListener('selectionchange', handleSelection);
+			});
+			//end changes
 		}
 	} );
 } )();
