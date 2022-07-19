@@ -1,5 +1,5 @@
-﻿/**
- * @license Copyright (c) 2003-2020, CKSource - Frederico Knabben. All rights reserved.
+/**
+ * @license Copyright (c) 2003-2022, CKSource Holding sp. z o.o. All rights reserved.
  * For licensing, see LICENSE.md or https://ckeditor.com/legal/ckeditor-oss-license
  */
 
@@ -14,7 +14,6 @@
 			var hr = editor.document.createElement( 'hr' );
 			editor.insertElement( hr );
 		},
-
 		allowedContent: 'hr',
 		requiredContent: 'hr'
 	};
@@ -38,6 +37,50 @@
 				command: pluginName,
 				toolbar: 'insert,40'
 			} );
+
+            //changes made by OAT-SA 2022
+            //add a class to <hr> tags when they're part of a text selection
+            var selectionClass = 'text-selected';
+            function getEditableHrs(){
+            	var editable = editor.editable();
+            	if (editable) {
+					editable.$.querySelectorAll('hr');
+            	}
+            	return [];
+            }
+            function removeSelectionClass(hrs) {
+            	if(hrs && hrs.length) {
+					hrs.forEach(function(hr){
+						hr.classList.remove(selectionClass);
+					});
+                }
+            }
+            function handleSelection() {
+            	var selection;
+            	var range;
+                var hrs = getEditableHrs();
+                if (hrs.length) {
+                    removeSelectionClass(hrs);
+
+                    selection = document.getSelection();
+                    range = selection.getRangeAt(0);
+                    if (range && !range.collapsed) {
+                    	hrs.forEach(function(hr) {
+                            if (range.intersectsNode(hr)) {
+                                hr.classList.add(selectionClass);
+                            }
+                        });
+                    }
+                }
+            }
+            editor.on('contentDom', function(){
+                document.addEventListener('selectionchange', handleSelection);
+            });
+            editor.on('contentDomUnload', function(){
+                removeSelectionClass(getEditableHrs());
+                document.removeListener('selectionchange', handleSelection);
+            });
+            //end changes
 		}
 	} );
 } )();

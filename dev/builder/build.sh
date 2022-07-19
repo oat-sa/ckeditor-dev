@@ -1,4 +1,4 @@
-﻿#!/bin/bash
+#!/bin/bash
 # Copyright (c) 2003-2020, CKSource - Frederico Knabben. All rights reserved.
 # For licensing, see LICENSE.md or https://ckeditor.com/legal/ckeditor-oss-license
 
@@ -57,7 +57,7 @@ echo "Starting CKBuilder..."
 
 JAVA_ARGS=${ARGS// -t / } # Remove -t from args.
 
-VERSION="4.14.1 TAO-1"
+VERSION="4.14.1 TAO-2"
 REVISION=$(git rev-parse --verify --short HEAD)
 
 # If the current revision is not tagged with any CKE version, it means it's a "dirty" build. We
