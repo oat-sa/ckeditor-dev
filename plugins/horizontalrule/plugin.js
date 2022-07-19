@@ -41,6 +41,11 @@
 			//changes made by OAT-SA 2022
 			//add a class to <hr> tags when they're part of a text selection
 			var selectionClass = 'text-selected';
+
+			/**
+			 * Get the list of <hr> element in the editable
+			 * @returns {NodeList}
+			 */
 			function getEditableHrs(){
 				var editable = editor.editable();
 				if (editable) {
@@ -48,13 +53,26 @@
 				}
 				return [];
 			}
+
+			/**
+			 * Remove the selection class on the given <hr> elements.
+			 * @param {NodeList}
+			 */
 			function removeSelectionClass(hrs) {
 				if(hrs && hrs.length) {
 					hrs.forEach(function(hr){
 						hr.classList.remove(selectionClass);
+						if (!hr.classList.length) {
+							hr.removeAttribute('class'); //keep it clean
+						}
 					});
 				}
 			}
+
+			/**
+			 * Toggles on the selection class for all <hr> elements within
+			 * the current selection range
+			 */
 			function handleSelection() {
 				var selection;
 				var range;
@@ -73,6 +91,7 @@
 					}
 				}
 			}
+
 			editor.on('contentDom', function(){
 				document.addEventListener('selectionchange', handleSelection);
 			});
