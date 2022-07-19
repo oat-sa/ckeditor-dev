@@ -1908,4 +1908,8 @@ legend.cke_voice_label {
     color: #222;
 }
 
+.cke_focus span[dir] {
+    background-color: #f2f2f2;
+}
+
 /*# sourceMappingURL=editor.css.map */
