@@ -376,12 +376,18 @@ Usage:
     visibility: visible;
     width: 120px;
     height: 100px;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
     background-color: #fff;
     border: 1px solid #b6b6b6;
     border-bottom-color: #999;
     border-radius: 3px;
     box-shadow: 0 0 3px rgba(0, 0, 0, 0.15);
+    font-size: 14px;
+}
+
+.cke_panel_visible .cke_panel {
+    visibility: visible;
 }
 
 /* This class represents panels which are used as context menus. */
@@ -389,18 +395,24 @@ Usage:
     padding: 0;
     margin: 0;
     visibility: hidden;
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 2px;
+    box-shadow: none;
+    max-height: 60vh;
 }
 
 /* This class represents panels which are used by rich combos. */
 .cke_combopanel {
     width: 150px;
     height: 170px;
+    overflow: hidden;
 }
 
 /* The IFRAME the panel is wrapped into. */
 .cke_panel_frame {
     width: 100%;
-    height: 100%;
+    height: inherit;
     font-size: 12px;
     overflow: auto;
     overflow-x: hidden;
@@ -460,7 +472,7 @@ is its visual representation:
     padding: 3px 4px;
     display: block;
     border: 1px solid #fff;
-    color: inherit !important;
+    color: inherit;
     text-decoration: none;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -487,7 +499,9 @@ is its visual representation:
 .cke_panel_listItem a:hover,
 .cke_panel_listItem a:focus,
 .cke_panel_listItem a:active {
+    color: white;
     background-color: #3e7da7;
+    outline: none;
 }
 
 .cke_hc .cke_panel_listItem a {
@@ -718,11 +732,12 @@ Usage:
 /* The box that holds buttons. */
 .cke_toolgroup {
     float: left;
-    margin: 0 2px 2px 0;
+    margin: 0 2px 0 0;
     border: 1px solid #ddd;
     border-radius: 2px;
     border-radius: 1px;
     background: white;
+    display: flex;
 }
 
 .cke_hc .cke_toolgroup {
@@ -827,8 +842,19 @@ a.cke_button_disabled:active {
     vertical-align: middle;
     float: left;
     cursor: default;
-    color: #474747;
-    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.cke_button_label.cke_button__language_label {
+    display: block;
+    cursor: pointer;
+}
+
+.cke_button__language {
+    cursor: pointer;
+}
+
+.cke_button__language_icon {
+    display: none;
 }
 
 .cke_rtl .cke_button_label {
@@ -996,19 +1022,63 @@ Special outer level classes used in this file:
     /* The "button" inside a menu item is a <a> element.
      Transforms it into a block. */
     display: block;
+    color: #222;
+    padding: 5px 7px;
+    cursor: pointer;
 }
 
-.cke_menuitem span {
-    /* Avoid the text selection cursor inside menu items. */
-    cursor: default;
-    font-size: 12px;
+.cke_menubutton .cke_menubutton_label {
+    cursor: pointer;
+}
+
+.cke_menubutton__rtl {
+    padding-right: 40px;
+    position: relative;
+}
+
+.cke_menubutton__rtl:after {
+    content: 'RTL';
+    display: block;
+    color: #ada194;
+    border: #ada194 1px solid;
+    border-radius: 2px;
+    font-size: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    right: 5px;
+    line-height: 12px;
+    padding: 0 4px;
+    position: absolute;
+}
+
+.cke_menubutton:active,
+.cke_menubutton:focus {
+    outline: none;
+    background-color: #f2f2f2;
+    color: #222;
+}
+
+.cke_menubutton:active:after,
+.cke_menubutton:focus:after {
+    color: #ada194;
+    border-color: #ada194;
 }
 
 .cke_menubutton:hover,
-.cke_menubutton:focus,
-.cke_menubutton:active {
-    background-color: #D3D3D3;
+.cke_menubutton_on,
+.cke_menubutton_on:focus {
+    background: #3e7da7;
+    color: white;
     display: block;
+    outline: none;
+    cursor: pointer;
+}
+
+.cke_menubutton:hover:after,
+.cke_menubutton_on:after,
+.cke_menubutton_on:focus:after {
+    color: white;
+    border-color: white;
 }
 
 .cke_hc .cke_menubutton {
@@ -1034,6 +1104,7 @@ Special outer level classes used in this file:
 
 /* The menu item icon. */
 .cke_menubutton_icon {
+    display: none;
     background-color: #D7D8D7;
     opacity: 0.70;
     /* Safari, Opera and Mozilla */
@@ -1046,12 +1117,6 @@ Special outer level classes used in this file:
     height: 16px;
     width: 0;
     padding: 4px 0;
-}
-
-.cke_menubutton:hover .cke_menubutton_icon,
-.cke_menubutton:focus .cke_menubutton_icon,
-.cke_menubutton:active .cke_menubutton_icon {
-    background-color: #D0D2D0;
 }
 
 .cke_menubutton_disabled:hover .cke_menubutton_icon,
@@ -1068,6 +1133,7 @@ Special outer level classes used in this file:
     background-color: transparent;
     width: 100%;
     vertical-align: middle;
+    font-size: 14px;
 }
 
 .cke_menubutton_disabled .cke_menubutton_label {
@@ -1076,20 +1142,8 @@ Special outer level classes used in this file:
     filter: alpha(opacity=30);
 }
 
-.cke_menubutton_on {
-    border: 1px solid #dedede;
-    background-color: #f2f2f2;
-    box-shadow: 0 0 2px rgba(0, 0, 0, 0.1) inset;
-}
-
 .cke_menubutton_on .cke_menubutton_icon {
     padding-right: 3px;
-}
-
-.cke_menubutton:hover,
-.cke_menubutton:focus,
-.cke_menubutton:active {
-    background-color: #EFF0EF;
 }
 
 .cke_panel_frame .cke_menubutton_label {
@@ -1245,7 +1299,6 @@ Usage:
     float: left;
     cursor: default;
     color: #474747;
-    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
     width: 60px;
 }
 
