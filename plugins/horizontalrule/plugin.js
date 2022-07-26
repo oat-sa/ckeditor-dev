@@ -1,5 +1,5 @@
-﻿/**
- * @license Copyright (c) 2003-2020, CKSource - Frederico Knabben. All rights reserved.
+/**
+ * @license Copyright (c) 2003-2022, CKSource Holding sp. z o.o. All rights reserved.
  * For licensing, see LICENSE.md or https://ckeditor.com/legal/ckeditor-oss-license
  */
 
@@ -14,7 +14,6 @@
 			var hr = editor.document.createElement( 'hr' );
 			editor.insertElement( hr );
 		},
-
 		allowedContent: 'hr',
 		requiredContent: 'hr'
 	};
@@ -38,6 +37,69 @@
 				command: pluginName,
 				toolbar: 'insert,40'
 			} );
+
+			//changes made by OAT-SA 2022
+			//add a class to <hr> tags when they're part of a text selection
+			var selectionClass = 'text-selected';
+
+			/**
+			 * Get the list of <hr> element in the editable
+			 * @returns {NodeList}
+			 */
+			function getEditableHrs(){
+				var editable = editor.editable();
+				if (editable) {
+					return editable.$.querySelectorAll('hr');
+				}
+				return [];
+			}
+
+			/**
+			 * Remove the selection class on the given <hr> elements.
+			 * @param {NodeList}
+			 */
+			function removeSelectionClass(hrs) {
+				if(hrs && hrs.length) {
+					hrs.forEach(function(hr){
+						hr.classList.remove(selectionClass);
+						if (!hr.classList.length) {
+							hr.removeAttribute('class'); //keep it clean
+						}
+					});
+				}
+			}
+
+			/**
+			 * Toggles on the selection class for all <hr> elements within
+			 * the current selection range
+			 */
+			function handleSelection() {
+				var selection;
+				var range;
+				var hrs = getEditableHrs();
+				if (hrs.length) {
+					removeSelectionClass(hrs);
+
+					selection = document.getSelection();
+					range = selection.getRangeAt(0);
+					if (range && !range.collapsed) {
+						hrs.forEach(function(hr) {
+							if (range.intersectsNode(hr)) {
+								hr.classList.add(selectionClass);
+							}
+						});
+					}
+				}
+			}
+
+			editor.on('contentDom', function(){
+				document.addEventListener('selectionchange', handleSelection);
+			});
+			editor.on('contentDomUnload', function(){
+				removeSelectionClass(getEditableHrs());
+				document.removeEventListener('selectionchange', handleSelection);
+			});
+			//end changes
 		}
 	} );
 } )();
