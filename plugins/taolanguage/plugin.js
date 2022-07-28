@@ -7,12 +7,15 @@
  * @fileOverview The [Language](https://ckeditor.com/cke4/addon/language) plugin.
  */
 
- 'use strict';
+'use strict';
+
+const { ajaxSettings } = require("jquery");
 
 ( function() {
 
     var allowedContent = 'span[!lang,!dir]',
         requiredContent = 'span[lang,dir]',
+        PLUGIN_CLASS = 'cke_taolanguage_enabled',
         ENABLE_PANEL_CLASS = 'cke_panel_visible';
 
     CKEDITOR.plugins.add( 'taolanguage', {
@@ -20,7 +23,8 @@
         lang: 'ar,az,bg,ca,cs,cy,da,de,de-ch,el,en,en-au,en-gb,eo,es,es-mx,et,eu,fa,fi,fo,fr,gl,he,hr,hu,id,it,ja,km,ko,ku,lt,lv,nb,nl,no,oc,pl,pt,pt-br,ro,ru,sk,sl,sq,sr,sr-latn,sv,tr,tt,ug,uk,vi,zh,zh-cn', // %REMOVE_LINE_CORE%
         icons: 'language', // %REMOVE_LINE_CORE%
         hidpi: true, // %REMOVE_LINE_CORE%
-
+        selectedLanguages: [],
+        langLabels: {en: 'English'},
         init: function( editor ) {
             var languagesConfigStrings = ( editor.config.language_list || [ 'ar:Arabic:rtl', 'fr:French', 'es:Spanish' ] ),
                 plugin = this,
@@ -29,7 +33,14 @@
                 parts,
                 curLanguageId, // 2-letter language identifier.
                 languageButtonId, // Will store button namespaced identifier, like "language_en".
-                i;
+                i,
+                selectedLangs;
+
+            // Create a label mapping from available languages.
+            languagesConfigStrings.forEach(function(lang) {
+                var parts = lang.split( ':' );
+                plugin.langLabels[parts[0]] = parts[1];
+            });
 
             // Registers command.
             editor.addCommand( 'language', {
@@ -45,6 +56,10 @@
                 refresh: function( editor ) {
                     // workaround against forcing .cke_menu_panel{ visibility: hidden }
                     document.body.classList.remove( ENABLE_PANEL_CLASS );
+
+                    editor.element.addClass( PLUGIN_CLASS );
+                    plugin.updateSelectedLanguages(editor);
+                    plugin.updateButtonLabel(plugin.selectedLanguages, editor.lang.taolanguage.button);
 
                     this.setState( plugin.getCurrentLangElement( editor ) ?
                         CKEDITOR.TRISTATE_ON : CKEDITOR.TRISTATE_OFF );
@@ -123,7 +138,7 @@
 
                     activeItems.language_remove = currentLanguagedElement ? CKEDITOR.TRISTATE_OFF : CKEDITOR.TRISTATE_DISABLED;
 
-                    if ( currentLanguagedElement )
+                    if ( plugin.selectedLanguages.length === 1 && currentLanguagedElement )
                         activeItems[ 'language_' + currentLanguagedElement.getAttribute( 'lang' ) ] = CKEDITOR.TRISTATE_ON;
 
                     return activeItems;
@@ -138,9 +153,10 @@
             }
         },
 
-        // Gets the first language element for the current editor selection.
-        // @param {CKEDITOR.editor} editor
-        // @returns {CKEDITOR.dom.element} The language element, if any.
+        /** Gets the first language element for the current editor selection.
+         * @param {CKEDITOR.editor} editor
+         * @returns {CKEDITOR.dom.element} The language element, if any.
+         */
         getCurrentLangElement: function( editor ) {
             var elementPath = editor.elementPath(),
                 activePath = elementPath && elementPath.elements,
@@ -157,8 +173,42 @@
             }
 
             return ret;
+        },
+
+        /** Set the currently selected language.
+         * @param {CKEDITOR.editor} editor
+         * @returns {Array} with languages codes that currentley selected or empty array if none
+         */
+        updateSelectedLanguages: function( editor ) {
+            var languages = [];
+            var slectedElements = editor.getSelectedHtml().find('[dir][lang]')['$'];
+
+            slectedElements
+                .forEach(function (element) {
+                    if(languages.indexOf(element.getAttribute('lang')) === -1) {
+                        languages.push(element.getAttribute('lang'));
+                    }
+                });
+
+            if(languages.length === 0) {
+                var lang = this.getCurrentLangElement(editor);
+                lang = lang && lang.getAttribute('lang');
+
+                if(lang) languages.push(lang);
+            }
+            this.selectedLanguages = languages;
+        },
+
+        /** Update button label
+         * @param {Array} langs array of selected languages
+         * @param {string} defaultLabel default label text
+         */
+        updateButtonLabel: function( langs, defaultLabel ) {
+            var labelText = langs.length === 1 ? this.langLabels[langs[0]] : defaultLabel
+
+            $('.cke_button__language_label').text(labelText);
         }
-    } );
+    });
 } )();
 
 /**

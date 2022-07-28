@@ -1054,14 +1054,7 @@ Special outer level classes used in this file:
 .cke_menubutton:active,
 .cke_menubutton:focus {
     outline: none;
-    background-color: #f2f2f2;
-    color: #222;
-}
-
-.cke_menubutton:active:after,
-.cke_menubutton:focus:after {
-    color: #ada194;
-    border-color: #ada194;
+    background: none;
 }
 
 .cke_menubutton:hover,
@@ -1899,6 +1892,11 @@ legend.cke_voice_label {
     background: #b3d4fc !important;
     text-shadow: none;
     color: #222;
+}
+
+.cke_taolanguage_enabled.cke_focus span[lang][dir] {
+    background-color: #BFBFBF;
+    border-bottom: 2px solid #333333;
 }
 
 /*# sourceMappingURL=editor.css.map */
