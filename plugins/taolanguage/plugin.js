@@ -9,8 +9,6 @@
 
 'use strict';
 
-const { ajaxSettings } = require("jquery");
-
 ( function() {
 
     var allowedContent = 'span[!lang,!dir]',
