@@ -179,21 +179,24 @@
          */
         updateSelectedLanguages: function( editor ) {
             var languages = [];
-            var slectedElements = editor.getSelectedHtml().find('[dir][lang]')['$'];
+            var selectedElements = editor.getSelectedHtml().find('[dir][lang]')['$'];
 
-            slectedElements
-                .forEach(function (element) {
-                    if(languages.indexOf(element.getAttribute('lang')) === -1) {
-                        languages.push(element.getAttribute('lang'));
-                    }
-                });
-
-            if(languages.length === 0) {
+			// If no selection made
+            if(selectedElements.length === 0) {
+				// Check if click was inside the block with language
                 var lang = this.getCurrentLangElement(editor);
                 lang = lang && lang.getAttribute('lang');
 
                 if(lang) languages.push(lang);
-            }
+            } else {
+				// Add languages without duplicates
+				selectedElements
+					.forEach(function (element) {
+						if(languages.indexOf(element.getAttribute('lang')) === -1) {
+							languages.push(element.getAttribute('lang'));
+						}
+					});
+			}
             this.selectedLanguages = languages;
         },
 
