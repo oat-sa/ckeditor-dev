@@ -56,7 +56,7 @@
                     document.body.classList.remove( ENABLE_PANEL_CLASS );
 
                     editor.element.addClass( PLUGIN_CLASS );
-                    plugin.updateSelectedLanguages(editor);
+                    plugin.setSelectedLanguages(editor);
                     plugin.updateButtonLabel(plugin.selectedLanguages, editor.lang.taolanguage.button);
 
                     this.setState( plugin.getCurrentLangElement( editor ) ?
@@ -173,23 +173,23 @@
             return ret;
         },
 
-        /** Set the currently selected language.
+        /** Set the currently selected language to plugin's property.
          * @param {CKEDITOR.editor} editor
          * @returns {Array} with languages codes that currentley selected or empty array if none
          */
-        updateSelectedLanguages: function( editor ) {
+        setSelectedLanguages: function( editor ) {
             var languages = [];
             var selectedElements = editor.getSelectedHtml().find('[dir][lang]')['$'];
 
 			// If no selection made
             if(selectedElements.length === 0) {
-				// Check if click was inside the block with language
+				// Single click was inside the block with language
                 var lang = this.getCurrentLangElement(editor);
                 lang = lang && lang.getAttribute('lang');
 
                 if(lang) languages.push(lang);
             } else {
-				// Add languages without duplicates
+				// Character range selection
 				selectedElements
 					.forEach(function (element) {
 						if(languages.indexOf(element.getAttribute('lang')) === -1) {
