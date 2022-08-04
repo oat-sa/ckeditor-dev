@@ -1895,8 +1895,16 @@ legend.cke_voice_label {
 }
 
 .cke_taolanguage_enabled.cke_focus span[lang][dir] {
-    background-color: #BFBFBF;
-    border-bottom: 2px solid #333333;
+    border-right: 1px solid transparent;
+    border-left: 1px solid transparent;
+    box-shadow: inset 0px 0px 0px 1px #222;
+    padding: 0 4px;
+}
+
+.cke_taolanguage_enabled.cke_focus span[lang][dir] span[lang][dir] {
+    border: none;
+    box-shadow: none;
+    padding: 0;
 }
 
 /*# sourceMappingURL=editor.css.map */
