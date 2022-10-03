@@ -111,6 +111,7 @@ var CKBUILDER_CONFIG = {
         taohighlight: 1,
         taoqtiinclude: 1,
         taoqtiprintedvariable: 1,
+        taofurigana: 1,
         templates: 0,
         toolbar: 1,
         undo: 1,
