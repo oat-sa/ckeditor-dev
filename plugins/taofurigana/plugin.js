@@ -4,6 +4,7 @@ CKEDITOR.plugins.add('taofurigana', {
 		'use strict';
 
         var commandName = 'rubyFurigana';
+        var containsTag;
 	    /**
 	     * @param {CKEDITOR.dom.selection} selection
 	     * @returns {CKEDITOR.dom.element}
@@ -13,14 +14,89 @@ CKEDITOR.plugins.add('taofurigana', {
 				content = range.extractContents().$;
 			return new CKEDITOR.dom.element(content);
 		}
-        	    /**
+	    /**
+	     * @param {Node} node
+	     * @returns {boolean}
+	     */
+		function isTextNode(node) {
+			return node.nodeType === window.Node.TEXT_NODE;
+		}
+        /**
+	     * @param {Selection} selection
+	     * @returns {boolean}
+	     */
+		function isSelectionEmpty(selection) {
+			return selection && selection.isCollapsed;
+		}
+        /**
+	     * Return containing Element if current node is of type text
+	     * @param {Node} node
+	     * @returns {Node}
+	     */
+		function getContainerElement(node) {
+			return isTextNode(node) ? node.parentNode : node;
+		}
+        /**
+	     * We check for partially selected nodes
+	     * @param range
+	     * @returns {boolean}
+	     */
+		function isValidRange(range) {
+			var start = getContainerElement(range.startContainer),
+				end = getContainerElement(range.endContainer);
+
+			return start.isSameNode(end);
+		}
+        /**
+	     * Traverse a DOM tree to check if it contains a tags
+	     * @param {Node} rootNode
+	     */
+		function searchTags(rootNode) {
+			var childNodes = rootNode.childNodes,
+				currentNode, i;
+
+			for (i = 0; i < childNodes.length; i++) {
+				currentNode = childNodes[i];
+				if (!containsTag && !isTextNode(currentNode)) {
+					containsTag = true;
+                    return;
+				}
+			}
+		}
+        /**
+	     * Make sure that the current selection is not already inside a furigana/ruby
+	     * @param {Node} node
+	     * @returns {CKEDITOR.dom.node|null}
+	     */
+		function isInFigurana(node) {
+			return node.getAscendant('ruby') !== null;
+		}
+        /**
+	     * @param {Selection} selection
+	     * @returns {boolean}
+	     */
+		function isWrappable(selection) {
+			var range = !selection.isCollapsed && selection.getRangeAt(0);
+
+			if (range) {
+				containsTag = false;
+				searchTags(range.cloneContents());
+
+				return range.toString().trim() !== ''
+					&& isValidRange(range)
+					&& !containsTag
+					&& !isInFigurana(range.startContainer);
+			}
+			return false;
+		}
+        /**
 	     * @param {CkEditor} editor - ckEditor instance
 	     */
-		function tooltipCanBeCreated(editor) {
+		function furiganaCanBeCreated(editor) {
 			var selection = editor.getSelection();
 			var nativeSelection = selection.getNative();
 
-			return nativeSelection !== null && (canInsert(nativeSelection) || isWrappable(nativeSelection));
+			return nativeSelection !== null && (canInsert(selection) || isWrappable(selection));
 		}
 
 	    /**
@@ -28,16 +104,25 @@ CKEDITOR.plugins.add('taofurigana', {
 	     * @returns {boolean}
 	     */
 		function canInsert(selection) {
-			var range = selection.getRangeAt(0)
-			return isSelectionEmpty(selection) && !isInTooltip(selection.getRangeAt(range.startContainer));
+			return !isSelectionEmpty(selection) && !isInFigurana(selection.getRanges()[0].startContainer);
 		}
-
 	    /**
-	     * @param {Selection} selection
-	     * @returns {boolean}
+	     * Change command state according to the current selection content
+	     * @param {CkEditor} editor - ckEditor instance
 	     */
-		function isSelectionEmpty(selection) {
-			return selection && selection.isCollapsed;
+         function refreshCommandState(editor) {
+			var command = editor.getCommand(commandName);
+            var selection = editor.getSelection();
+
+			if (command) {
+				if (furiganaCanBeCreated(editor)) {
+					command.setState(CKEDITOR.TRISTATE_OFF);
+				} else if (isInFigurana(selection.getRanges()[0].startContainer)) {
+                    command.setState(CKEDITOR.TRISTATE_ON);
+                } else {
+					command.setState(CKEDITOR.TRISTATE_DISABLED);
+				}
+			}
 		}
         // Create the command that can be used to apply the style.
         editor.addCommand(commandName, {
@@ -48,7 +133,7 @@ CKEDITOR.plugins.add('taofurigana', {
                     rbElement,
                     rtElement;
 
-                if (typeof (config.insert) === 'function') {
+                if (furiganaCanBeCreated(editor) && typeof (config.insert) === 'function') {
                     rubyElement = new CKEDITOR.dom.element('ruby', editor.document);
                     rbElement = new CKEDITOR.dom.element('rb', editor.document);
                     rbElement.append(getSelectionContent(selection));
@@ -63,7 +148,16 @@ CKEDITOR.plugins.add('taofurigana', {
                 }
             }
         });
+        editor.on('instanceReady', function () {
+			var editable = editor.editable();
 
+			editable.attachListener(editable, 'mouseup', function () {
+				refreshCommandState(editor);
+			});
+			editable.attachListener(editable, 'keyup', function () {
+				refreshCommandState(editor);
+			});
+		});
         editor.ui.addButton('TaoFurigana', {
             label : editor.lang[commandName].button,
             command : commandName,
