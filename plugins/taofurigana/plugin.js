@@ -26,7 +26,7 @@ CKEDITOR.plugins.add('taofurigana', {
 	     * @returns {boolean}
 	     */
 		function isSelectionEmpty(selection) {
-			return selection && selection.isCollapsed;
+			return selection && selection.isCollapsed();
 		}
         /**
 	     * Return containing Element if current node is of type text
@@ -76,7 +76,7 @@ CKEDITOR.plugins.add('taofurigana', {
 	     * @returns {boolean}
 	     */
 		function isWrappable(selection) {
-			var range = !selection.isCollapsed && selection.getRangeAt(0);
+			var range = !selection.isCollapsed() && selection.getRanges()[0];
 
 			if (range) {
 				containsTag = false;
@@ -145,6 +145,10 @@ CKEDITOR.plugins.add('taofurigana', {
                     editor.insertElement(rubyElement);
 
                     config.insert.call(editor, rubyElement.$);
+                    // move cursor inside <rt>^</rt> Element
+                    var range = new CKEDITOR.dom.range(editor.document);
+                    range.moveToElementEditablePosition(rtElement, true);
+                    editor.getSelection().selectRanges([range]);
                 }
             }
         });
