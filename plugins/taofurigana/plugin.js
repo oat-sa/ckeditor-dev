@@ -129,11 +129,26 @@ CKEDITOR.plugins.add('taofurigana', {
             exec: function (editor) {
                 var config = editor.config.taoQtiItem,
                     selection = editor.getSelection(),
+                    startNode = selection.getRanges()[0].startContainer,
                     rubyElement,
                     rbElement,
-                    rtElement;
+                    rtElement,
+                    range,
+                    emptyElement;
 
-                if (furiganaCanBeCreated(editor) && typeof (config.insert) === 'function') {
+                if (isInFigurana(startNode)) {
+                    rubyElement = startNode.getAscendant('ruby');
+                    // move cursor outside ruby element
+                    range = new CKEDITOR.dom.range(editor.document);
+                    emptyElement = new CKEDITOR.dom.text(CKEDITOR.dom.selection.FILLING_CHAR_SEQUENCE);
+                    emptyElement.insertAfter(rubyElement);
+                    if (range.moveToElementEditablePosition(emptyElement, true)) {
+                        console.log('moveToElementEditablePosition - true');
+                        selection.selectRanges([range]);
+                        refreshCommandState(editor);
+                    }
+                }
+                else if (furiganaCanBeCreated(editor) && typeof (config.insert) === 'function') {
                     rubyElement = new CKEDITOR.dom.element('ruby', editor.document);
                     rbElement = new CKEDITOR.dom.element('rb', editor.document);
                     rbElement.append(getSelectionContent(selection));
@@ -146,7 +161,7 @@ CKEDITOR.plugins.add('taofurigana', {
 
                     config.insert.call(editor, rubyElement.$);
                     // move cursor inside <rt>^</rt> Element
-                    var range = new CKEDITOR.dom.range(editor.document);
+                    range = new CKEDITOR.dom.range(editor.document);
                     range.moveToElementEditablePosition(rtElement, true);
                     editor.getSelection().selectRanges([range]);
                 }
