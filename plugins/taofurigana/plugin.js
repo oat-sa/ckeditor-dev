@@ -76,7 +76,7 @@ CKEDITOR.plugins.add('taofurigana', {
 	     * @returns {boolean}
 	     */
 		function isWrappable(selection) {
-			var range = !selection.isCollapsed() && selection.getRanges()[0];
+			var range = !selection.isCollapsed && selection.getRangeAt(0);
 
 			if (range) {
 				containsTag = false;
@@ -84,8 +84,7 @@ CKEDITOR.plugins.add('taofurigana', {
 
 				return range.toString().trim() !== ''
 					&& isValidRange(range)
-					&& !containsTag
-					&& !isInFigurana(range.startContainer);
+					&& !containsTag;
 			}
 			return false;
 		}
@@ -96,7 +95,7 @@ CKEDITOR.plugins.add('taofurigana', {
 			var selection = editor.getSelection();
 			var nativeSelection = selection.getNative();
 
-			return nativeSelection !== null && (canInsert(selection) || isWrappable(selection));
+			return nativeSelection !== null && canInsert(selection)&& isWrappable(nativeSelection);
 		}
 
 	    /**
@@ -104,7 +103,7 @@ CKEDITOR.plugins.add('taofurigana', {
 	     * @returns {boolean}
 	     */
 		function canInsert(selection) {
-			return !isSelectionEmpty(selection) && !isInFigurana(selection.getRanges()[0].startContainer);
+			return !isSelectionEmpty(selection) && !isInFigurana(selection.getRanges()[0].startContainer) ;
 		}
 	    /**
 	     * Change command state according to the current selection content
