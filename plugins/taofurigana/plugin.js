@@ -103,7 +103,7 @@ CKEDITOR.plugins.add('taofurigana', {
 	     * @returns {boolean}
 	     */
 		function canInsert(selection) {
-			return !isSelectionEmpty(selection) && !isInFigurana(selection.getRanges()[0].startContainer) ;
+			return !isSelectionEmpty(selection) && selection.getRanges()[0] && !isInFigurana(selection.getRanges()[0].startContainer) ;
 		}
 	    /**
 	     * Change command state according to the current selection content
@@ -116,7 +116,7 @@ CKEDITOR.plugins.add('taofurigana', {
 			if (command) {
 				if (furiganaCanBeCreated(editor)) {
 					command.setState(CKEDITOR.TRISTATE_OFF);
-				} else if (isInFigurana(selection.getRanges()[0].startContainer)) {
+				} else if (selection.getRanges()[0] && isInFigurana(selection.getRanges()[0].startContainer)) {
                     command.setState(CKEDITOR.TRISTATE_ON);
                 } else {
 					command.setState(CKEDITOR.TRISTATE_DISABLED);
@@ -128,21 +128,26 @@ CKEDITOR.plugins.add('taofurigana', {
             exec: function (editor) {
                 var config = editor.config.taoQtiItem,
                     selection = editor.getSelection(),
-                    startNode = selection.getRanges()[0].startContainer,
+                    curRange = selection.getRanges()[0],
+                    startNode = curRange.startContainer,
                     rubyElement,
                     rbElement,
                     rtElement,
                     range,
                     emptyElement;
 
-                if (isInFigurana(startNode)) {
+                if (isInFigurana(startNode) && startNode.$.nextSibling === null && curRange.endOffset + 1 >= startNode.$.length) {
                     rubyElement = startNode.getAscendant('ruby');
                     // move cursor outside ruby element
                     range = new CKEDITOR.dom.range(editor.document);
-                    emptyElement = new CKEDITOR.dom.text(CKEDITOR.dom.selection.FILLING_CHAR_SEQUENCE);
-                    emptyElement.insertAfter(rubyElement);
-                    if (range.moveToElementEditablePosition(emptyElement, true)) {
-                        console.log('moveToElementEditablePosition - true');
+                    if (!rubyElement.$.nextSibling) {
+                        range.moveToClosestEditablePosition(rubyElement, true)
+                        selection.selectRanges([range]);
+                        refreshCommandState(editor);
+                    } else {
+                        emptyElement = new CKEDITOR.dom.text(CKEDITOR.dom.selection.FILLING_CHAR_SEQUENCE);
+                        emptyElement.insertAfter(rubyElement);
+                        range.moveToElementEditablePosition(emptyElement);
                         selection.selectRanges([range]);
                         refreshCommandState(editor);
                     }
@@ -161,8 +166,9 @@ CKEDITOR.plugins.add('taofurigana', {
                     config.insert.call(editor, rubyElement.$);
                     // move cursor inside <rt>^</rt> Element
                     range = new CKEDITOR.dom.range(editor.document);
-                    range.moveToElementEditablePosition(rtElement, true);
+                    range.moveToElementEditablePosition(rtElement);
                     editor.getSelection().selectRanges([range]);
+                    refreshCommandState(editor);
                 }
             }
         });
