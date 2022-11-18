@@ -176,7 +176,6 @@ CKEDITOR.plugins.add('taofurigana', {
 					rubyElement.append(rtElement);
 
 					editor.insertElement(rubyElement);
-					config.insert.call(editor, rubyElement.$);
 
 					// move cursor inside <rt>^</rt> Element
 					range = new CKEDITOR.dom.range(editor.document);
