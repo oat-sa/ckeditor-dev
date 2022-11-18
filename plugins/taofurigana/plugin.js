@@ -126,8 +126,7 @@ CKEDITOR.plugins.add('taofurigana', {
 		// Create the command that can be used to apply the style.
 		editor.addCommand(commandName, {
 			exec: function (editor) {
-				var config = editor.config.taoQtiItem,
-					selection = editor.getSelection(),
+				var selection = editor.getSelection(),
 					curRange = selection.getRanges()[0],
 					startNode = curRange.startContainer,
 					rubyElement,
@@ -138,8 +137,20 @@ CKEDITOR.plugins.add('taofurigana', {
 					rbHtml;
 				if (isInFigurana(startNode)) {
 					rubyElement = startNode.getAscendant('ruby');
-					console.log('rubyElement ', rubyElement);
-					if (rubyElement.$.children.length === 2 && startNode.$.nextSibling === null && curRange.endOffset + 1 >= startNode.$.length) {
+					rbElement = rubyElement.find('rb');
+					rtElement = rubyElement.find('rt');
+					if (rbElement.$.length && (!rtElement.$.length || !rtElement.$[0].innerText.trim())) {
+						// if rt is empty or is deleted
+						// remove ruby, put base as text
+						editor.fire( 'saveSnapshot' );
+						editor.fire( 'lockSnapshot' );
+						rbHtml = new CKEDITOR.dom.text(rbElement.$[0].innerHTML);
+						rbHtml.replace(rubyElement);
+						refreshCommandState(editor);
+						editor.fire( 'unlockSnapshot' );
+					} else if (rbElement.$.length && rtElement.$.length && startNode.getParent().$ === rtElement.$[0] && 
+							startNode.$.nextSibling === null && curRange.endOffset + 1 >= startNode.$.length) {
+						// if in the end of rt text
 						// move cursor outside ruby element
 						range = new CKEDITOR.dom.range(editor.document);
 						if (!rubyElement.$.nextSibling) {
@@ -153,17 +164,8 @@ CKEDITOR.plugins.add('taofurigana', {
 							selection.selectRanges([range]);
 							refreshCommandState(editor);
 						}
-					} else if (rubyElement.$.children.length === 1 && rubyElement.$.children[0].nodeName === 'RB') {
-						// rt was removed, we need to remove ryby wrapper on rb
-						editor.fire( 'saveSnapshot' );
-						editor.fire( 'lockSnapshot' );
-						rbHtml = new CKEDITOR.dom.text(rubyElement.$.children[0].innerHTML);
-						rbHtml.replace(rubyElement);
-						refreshCommandState(editor);
-						editor.fire( 'unlockSnapshot' );
 					}
-				}
-				else if (furiganaCanBeCreated(editor) && typeof (config.insert) === 'function') {
+				} else if (furiganaCanBeCreated(editor)) {
 					editor.fire( 'saveSnapshot' );
 					editor.fire( 'lockSnapshot' );
 
