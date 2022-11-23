@@ -106,18 +106,54 @@ CKEDITOR.plugins.add('taofurigana', {
 			return !isSelectionEmpty(selection) && selection.getRanges()[0] && !isInFigurana(selection.getRanges()[0].startContainer) ;
 		}
 		/**
+		 * @param {Node} startNode
+		 * @param {Boolean} byClick
+		 * @param {Selection} selection
+		 * @returns {boolean}
+		 */
+		function deleteRubyIfNoRt(startNode, byClick, selection) {
+			var rubyElement = startNode.getAscendant('ruby');
+			var rbElement = rubyElement.find('rb');
+			var rtElement = rubyElement.find('rt');
+			var range;
+			if (rbElement.$.length && !rtElement.$.length ||
+				byClick && rbElement.$.length && rtElement.$.length && !rtElement.$[0].innerText.trim()) {
+				// if rt is deleted
+				// of if click on toolbar button check that it is empty
+				// remove ruby, put base as text
+				editor.fire( 'saveSnapshot' );
+				editor.fire( 'lockSnapshot' );
+				rbHtml = new CKEDITOR.dom.element.createFromHtml(rbElement.$[0].innerHTML);
+				rbHtml.replace(rubyElement);
+				if (!byClick) {
+					// select base text, to avoid know issue with delete key https://dev.ckeditor.com/ticket/9998
+					// new text will be wrapped in <span style="font-size: 7px;">...</span>
+					range = new CKEDITOR.dom.range(editor.document);
+					range.selectNodeContents(rbHtml);
+					selection.selectRanges([range]);
+				}
+				editor.fire( 'unlockSnapshot' );
+				return true;
+			} 
+		}
+		/**
 		 * Change command state according to the current selection content
 		 * @param {CkEditor} editor - ckEditor instance
 		 */
 		function refreshCommandState(editor) {
 			var command = editor.getCommand(commandName);
       var selection = editor.getSelection();
+			var startNode = selection.getRanges()[0].startContainer;
 
 			if (command) {
 				if (furiganaCanBeCreated(editor)) {
 					command.setState(CKEDITOR.TRISTATE_OFF);
-				} else if (selection.getRanges()[0] && isInFigurana(selection.getRanges()[0].startContainer)) {
+				} else if (selection.getRanges()[0] && isInFigurana(startNode)) {
+					if (deleteRubyIfNoRt(startNode, false, selection)) {
+						command.setState(CKEDITOR.TRISTATE_DISABLED);
+					} else {
 						command.setState(CKEDITOR.TRISTATE_ON);
+					}
 				} else {
 					command.setState(CKEDITOR.TRISTATE_DISABLED);
 				}
@@ -133,22 +169,12 @@ CKEDITOR.plugins.add('taofurigana', {
 					rbElement,
 					rtElement,
 					range,
-					emptyElement,
-					rbHtml;
+					emptyElement;
 				if (isInFigurana(startNode)) {
 					rubyElement = startNode.getAscendant('ruby');
 					rbElement = rubyElement.find('rb');
 					rtElement = rubyElement.find('rt');
-					if (rbElement.$.length && (!rtElement.$.length || !rtElement.$[0].innerText.trim())) {
-						// if rt is empty or is deleted
-						// remove ruby, put base as text
-						editor.fire( 'saveSnapshot' );
-						editor.fire( 'lockSnapshot' );
-						rbHtml = new CKEDITOR.dom.text(rbElement.$[0].innerHTML);
-						rbHtml.replace(rubyElement);
-						refreshCommandState(editor);
-						editor.fire( 'unlockSnapshot' );
-					} else if (rbElement.$.length && rtElement.$.length && startNode.getParent().$ === rtElement.$[0] && 
+					if (!deleteRubyIfNoRt(startNode, true) && rbElement.$.length && rtElement.$.length && startNode.getParent().$ === rtElement.$[0] && 
 							startNode.$.nextSibling === null && curRange.endOffset + 1 >= startNode.$.length) {
 						// if in the end of rt text
 						// move cursor outside ruby element
