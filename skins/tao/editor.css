@@ -1836,6 +1836,10 @@ Usage:
     content: "\e611";
 }
 
+.cke_button__taofurigana_icon::before {
+    content: "\e919";
+}
+
 /* Important!
    To avoid showing the editor UI while its styles are still not available, the
    editor creates it with visibility:hidden. Here, we restore the UI visibility. */
