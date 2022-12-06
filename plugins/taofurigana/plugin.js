@@ -143,13 +143,13 @@ CKEDITOR.plugins.add('taofurigana', {
 		function refreshCommandState(editor) {
 			var command = editor.getCommand(commandName);
       var selection = editor.getSelection();
-			var startNode = selection.getRanges()[0].startContainer;
+			var range = selection.getRanges()[0];
 
 			if (command) {
 				if (furiganaCanBeCreated(editor)) {
 					command.setState(CKEDITOR.TRISTATE_OFF);
-				} else if (selection.getRanges()[0] && isInFigurana(startNode)) {
-					if (deleteRubyIfNoRt(startNode, false, selection)) {
+				} else if (selection.getRanges()[0] && isInFigurana(range.startContainer)) {
+					if (deleteRubyIfNoRt(range.startContainer, false, selection)) {
 						command.setState(CKEDITOR.TRISTATE_DISABLED);
 					} else {
 						command.setState(CKEDITOR.TRISTATE_ON);
@@ -174,7 +174,9 @@ CKEDITOR.plugins.add('taofurigana', {
 					rubyElement = startNode.getAscendant('ruby');
 					rbElement = rubyElement.find('rb');
 					rtElement = rubyElement.find('rt');
-					if (!deleteRubyIfNoRt(startNode, true) && rbElement.$.length && rtElement.$.length && startNode.getParent().$ === rtElement.$[0] && 
+					if (deleteRubyIfNoRt(startNode, true)) {
+						refreshCommandState(editor);
+					} else if (rbElement.$.length && rtElement.$.length && startNode.getParent().$ === rtElement.$[0] && 
 							startNode.$.nextSibling === null && curRange.endOffset + 1 >= startNode.$.length) {
 						// if in the end of rt text
 						// move cursor outside ruby element
