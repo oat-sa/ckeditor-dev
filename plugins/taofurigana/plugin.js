@@ -5,6 +5,8 @@ CKEDITOR.plugins.add('taofurigana', {
 
 		var commandName = 'rubyFurigana';
 		var containsTag;
+		var otherButtons = [];
+		var combos = [];
 		/**
 		 * @param {CKEDITOR.dom.selection} selection
 		 * @returns {CKEDITOR.dom.element}
@@ -66,9 +68,9 @@ CKEDITOR.plugins.add('taofurigana', {
     /**
 		 * Make sure that the current selection is not already inside a furigana/ruby
 		 * @param {Node} node
-		 * @returns {CKEDITOR.dom.node|null}
+		 * @returns {boolean}
 		 */
-		function isInFigurana(node) {
+		function isInFugirana(node) {
 			return node.getAscendant('ruby') !== null;
 		}
 		/**
@@ -103,7 +105,7 @@ CKEDITOR.plugins.add('taofurigana', {
 		 * @returns {boolean}
 		 */
 		function canInsert(selection) {
-			return !isSelectionEmpty(selection) && selection.getRanges()[0] && !isInFigurana(selection.getRanges()[0].startContainer) ;
+			return !isSelectionEmpty(selection) && selection.getRanges()[0] && !isInFugirana(selection.getRanges()[0].startContainer) ;
 		}
 		/**
 		 * @param {Node} startNode
@@ -144,18 +146,46 @@ CKEDITOR.plugins.add('taofurigana', {
 			var command = editor.getCommand(commandName);
       var selection = editor.getSelection();
 			var range = selection.getRanges()[0];
+			if (!otherButtons.length) {
+				editor.toolbar.forEach(function (element) {
+					if (element.items && element.items.length) {
+						element.items.forEach(function (item) {
+								if (item.command && item.command !== commandName) {
+									otherButtons.push(item.command);
+								} else if(!item.command && typeof item.setState !== "undefined") {
+									combos.push(item);
+								}
+						});
+					}
+				});
+			}
+			function setButtonsState(state) {
+				otherButtons.forEach(function(button) {
+					editor.getCommand(button).setState(state);
+				});
+				combos.forEach(function(combo) {
+					combo.setState(state);
+				});
+			}
 
 			if (command) {
 				if (furiganaCanBeCreated(editor)) {
 					command.setState(CKEDITOR.TRISTATE_OFF);
-				} else if (selection.getRanges()[0] && isInFigurana(range.startContainer)) {
+					setButtonsState(CKEDITOR.TRISTATE_OFF);
+				} else if (selection.getRanges()[0] && isInFugirana(range.startContainer)) {
 					if (deleteRubyIfNoRt(range.startContainer, false, selection)) {
 						command.setState(CKEDITOR.TRISTATE_DISABLED);
+						setButtonsState(CKEDITOR.TRISTATE_OFF);
 					} else {
 						command.setState(CKEDITOR.TRISTATE_ON);
+						setTimeout(function() {
+							setButtonsState(CKEDITOR.TRISTATE_DISABLED);
+						}, 150);
+						
 					}
 				} else {
 					command.setState(CKEDITOR.TRISTATE_DISABLED);
+					setButtonsState(CKEDITOR.TRISTATE_OFF);
 				}
 			}
 		}
@@ -170,7 +200,7 @@ CKEDITOR.plugins.add('taofurigana', {
 					rtElement,
 					range,
 					emptyElement;
-				if (isInFigurana(startNode)) {
+				if (isInFugirana(startNode)) {
 					rubyElement = startNode.getAscendant('ruby');
 					rbElement = rubyElement.find('rb');
 					rtElement = rubyElement.find('rt');
