@@ -24,7 +24,7 @@ CKEDITOR.plugins.add('taotooltip', {
 			var selection = editor.getSelection();
 			var nativeSelection = selection.getNative();
 
-			return nativeSelection !== null && (canInsert(nativeSelection) || isWrappable(nativeSelection)) && !isInFigurana(selection.getRanges()[0].startContainer);
+			return nativeSelection !== null && (canInsert(nativeSelection) || isWrappable(nativeSelection)) && !isInFugirana(selection.getRanges()[0].startContainer);
 		}
 
 	    /**
@@ -129,9 +129,9 @@ CKEDITOR.plugins.add('taotooltip', {
     /**
 		 * Make sure that the current selection is not already inside a furigana/ruby
 		 * @param {Node} node
-		 * @returns {CKEDITOR.dom.node|null}
+		 * @returns {boolean}
 		 */
-		function isInFigurana(node) {
+		function isInFugirana(node) {
 			return node.getAscendant('ruby') !== null;
 		}
 	    /**
