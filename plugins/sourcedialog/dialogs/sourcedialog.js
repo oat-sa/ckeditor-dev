@@ -68,7 +68,9 @@ CKEDITOR.dialog.add( 'sourcedialog', function( editor ) {
 				id: 'data',
 				dir: 'ltr',
 				inputStyle: 'cursor:auto;' +
-					'width:' + width + 'px;' +
+					'width:100%;' + //rely on parent size
+					'min-width:' + width + 'px;' + //set appropriate min-width
+					'max-width:unset;' + //remove any maxwidth constraints
 					'height:' + height + 'px;' +
 					'tab-size:4;' +
 					'text-align:left;',
