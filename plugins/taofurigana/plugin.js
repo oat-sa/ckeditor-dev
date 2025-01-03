@@ -136,7 +136,7 @@ CKEDITOR.plugins.add('taofurigana', {
 				}
 				editor.fire( 'unlockSnapshot' );
 				return true;
-			} 
+			}
 		}
 		/**
 		 * Change command state according to the current selection content
@@ -181,7 +181,7 @@ CKEDITOR.plugins.add('taofurigana', {
 						setTimeout(function() {
 							setButtonsState(CKEDITOR.TRISTATE_DISABLED);
 						}, 150);
-						
+
 					}
 				} else {
 					command.setState(CKEDITOR.TRISTATE_DISABLED);
@@ -206,7 +206,7 @@ CKEDITOR.plugins.add('taofurigana', {
 					rtElement = rubyElement.find('rt');
 					if (deleteRubyIfNoRt(startNode, true)) {
 						refreshCommandState(editor);
-					} else if (rbElement.$.length && rtElement.$.length && startNode.getParent().$ === rtElement.$[0] && 
+					} else if (rbElement.$.length && rtElement.$.length && startNode.getParent().$ === rtElement.$[0] &&
 							startNode.$.nextSibling === null && curRange.endOffset + 1 >= startNode.$.length) {
 						// if in the end of rt text
 						// move cursor outside ruby element
@@ -239,7 +239,7 @@ CKEDITOR.plugins.add('taofurigana', {
 
 					// move cursor inside <rt>^</rt> Element
 					range = new CKEDITOR.dom.range(editor.document);
-					range.moveToElementEditablePosition(rtElement);
+					range.moveToElementEditablePosition(rtElement, true);
 					editor.getSelection().selectRanges([range]);
 					refreshCommandState(editor);
 
