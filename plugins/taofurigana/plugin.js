@@ -136,7 +136,7 @@ CKEDITOR.plugins.add('taofurigana', {
 				}
 				editor.fire( 'unlockSnapshot' );
 				return true;
-			} 
+			}
 		}
 		/**
 		 * Change command state according to the current selection content
@@ -181,7 +181,7 @@ CKEDITOR.plugins.add('taofurigana', {
 						setTimeout(function() {
 							setButtonsState(CKEDITOR.TRISTATE_DISABLED);
 						}, 150);
-						
+
 					}
 				} else {
 					command.setState(CKEDITOR.TRISTATE_DISABLED);
@@ -206,7 +206,7 @@ CKEDITOR.plugins.add('taofurigana', {
 					rtElement = rubyElement.find('rt');
 					if (deleteRubyIfNoRt(startNode, true)) {
 						refreshCommandState(editor);
-					} else if (rbElement.$.length && rtElement.$.length && startNode.getParent().$ === rtElement.$[0] && 
+					} else if (rbElement.$.length && rtElement.$.length && startNode.getParent().$ === rtElement.$[0] &&
 							startNode.$.nextSibling === null && curRange.endOffset + 1 >= startNode.$.length) {
 						// if in the end of rt text
 						// move cursor outside ruby element
@@ -231,19 +231,32 @@ CKEDITOR.plugins.add('taofurigana', {
 					rbElement = new CKEDITOR.dom.element('rb', editor.document);
 					rbElement.append(getSelectionContent(selection));
 					rtElement = new CKEDITOR.dom.element('rt', editor.document);
+					brElement = new CKEDITOR.dom.element('br', editor.document);
 					rtElement.appendHtml('&nbsp;');
 					rubyElement.append(rbElement);
 					rubyElement.append(rtElement);
 
+					// create a temporary element for binding the cursor
+					anchor = new CKEDITOR.dom.element('span', editor.document);
+					rtElement.append(anchor);
+					rtElement.appendHtml('&nbsp;');
+
+					// add a <br> element for the better navigation in Chrome (version >= 128)
+					rtElement.append(brElement);
+
 					editor.insertElement(rubyElement);
 
-					// move cursor inside <rt>^</rt> Element
+					// move cursor inside the anchor
 					range = new CKEDITOR.dom.range(editor.document);
-					range.moveToElementEditablePosition(rtElement);
+					range.setStart(anchor, 0);
+					range.collapse(true);
+					editor.getSelection().removeAllRanges();
 					editor.getSelection().selectRanges([range]);
 					refreshCommandState(editor);
 
 					editor.fire( 'unlockSnapshot' );
+					// remove anchor
+					anchor.remove();
 				}
 			}
 		});
