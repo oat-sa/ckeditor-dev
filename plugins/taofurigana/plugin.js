@@ -199,6 +199,7 @@ CKEDITOR.plugins.add('taofurigana', {
 					rbElement,
 					rtElement,
 					range,
+					zeroWidthSpace,
 					emptyElement;
 				if (isInFugirana(startNode)) {
 					rubyElement = startNode.getAscendant('ruby');
@@ -231,7 +232,6 @@ CKEDITOR.plugins.add('taofurigana', {
 					rbElement = new CKEDITOR.dom.element('rb', editor.document);
 					rbElement.append(getSelectionContent(selection));
 					rtElement = new CKEDITOR.dom.element('rt', editor.document);
-					brElement = new CKEDITOR.dom.element('br', editor.document);
 					rtElement.appendHtml('&nbsp;');
 					rubyElement.append(rbElement);
 					rubyElement.append(rtElement);
@@ -241,10 +241,10 @@ CKEDITOR.plugins.add('taofurigana', {
 					rtElement.append(anchor);
 					rtElement.appendHtml('&nbsp;');
 
-					// add a <br> element for the better navigation in Chrome (version >= 128)
-					rtElement.append(brElement);
-
 					editor.insertElement(rubyElement);
+					// add a zero-width space for the better navigation in Chrome (version >= 128) to the next sibling
+					zeroWidthSpace = new CKEDITOR.dom.text('\u200b', editor.document);
+					rubyElement.append(zeroWidthSpace);
 
 					// move cursor inside the anchor
 					range = new CKEDITOR.dom.range(editor.document);
