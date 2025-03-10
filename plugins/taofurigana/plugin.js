@@ -287,7 +287,6 @@ CKEDITOR.plugins.add('taofurigana', {
 			});
 		});
 		editor.on('blur', function() {
-			// Get all ruby elements in the editor
 			var rubyElements = editor.document.find('ruby');
 			var modified = false;
 
