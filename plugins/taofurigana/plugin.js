@@ -227,7 +227,7 @@ CKEDITOR.plugins.add('taofurigana', {
 						// move cursor outside ruby element
 						range = new CKEDITOR.dom.range(editor.document);
 						if (!rubyElement.$.nextSibling) {
-							range.moveToClosestEditablePosition(rubyElement, true)
+							range.moveToClosestEditablePosition(rubyElement, true);
 							selection.selectRanges([range]);
 							refreshCommandState(editor);
 						} else {
@@ -285,26 +285,39 @@ CKEDITOR.plugins.add('taofurigana', {
 			editable.attachListener(editable, 'keyup', function () {
 				refreshCommandState(editor);
 			});
+		});
+		editor.on('blur', function() {
+			// Get all ruby elements in the editor
+			var rubyElements = editor.document.find('ruby');
+			var modified = false;
 
-			editor.on('blur', function () {
-				// Get all ruby elements in the editor
-				var rubyElements = editor.document.find('ruby');
-				for (var i = 0; i < rubyElements.count(); i++) {
-					var ruby = rubyElements.getItem(i);
-					var rtElement = ruby.find('rt');
+			for (var i = 0; i < rubyElements.count(); i++) {
+				var ruby = rubyElements.getItem(i);
+				var rtElement = ruby.find('rt');
 
-					// Check if the rt element is empty
-					if (rtElement.$.length && rtElement.$[0].innerText.trim() === '') {
-						var rbElement = ruby.find('rb');
-						if (rbElement.$.length) {
-							var rbHtml = new CKEDITOR.dom.element.createFromHtml(rbElement.$[0].innerHTML);
-							rbHtml.replace(ruby);
-							editor.fire('unlockSnapshot');
-							refreshCommandState(editor);
-						}
+				if (rtElement.$.length && rtElement.$[0].innerText.trim() === '') {
+					var rbElement = ruby.find('rb');
+					if (rbElement.$.length) {
+						editor.fire('saveSnapshot');
+						editor.fire('lockSnapshot');
+
+						var rbHtml = new CKEDITOR.dom.element.createFromHtml(rbElement.$[0].innerHTML);
+						rbHtml.replace(ruby);
+
+						editor.fire('unlockSnapshot');
+						modified = true;
 					}
 				}
-			});
+			}
+			//update editor textarea
+			if (modified) {
+				//
+				editor.updateElement();
+
+				editor.fire('change');
+
+				refreshCommandState(editor);
+			}
 		});
 		editor.ui.addButton('TaoFurigana', {
 			label: editor.lang[commandName].button,
