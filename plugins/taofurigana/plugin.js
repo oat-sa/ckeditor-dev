@@ -285,38 +285,38 @@ CKEDITOR.plugins.add('taofurigana', {
 			editable.attachListener(editable, 'keyup', function () {
 				refreshCommandState(editor);
 			});
-		});
-		editor.on('blur', function() {
-			// Get all ruby elements in the editor
-			var rubyElements = editor.document.find('ruby');
-			var modified = false;
 
-			for (var i = 0; i < rubyElements.count(); i++) {
-				var ruby = rubyElements.getItem(i);
-				var rtElement = ruby.find('rt');
+			editor.on('blur', function() {
+				cleanupEmptyRubyTags();
+			});
 
-				if (rtElement.$.length && rtElement.$[0].innerText.trim() === '') {
-					var rbElement = ruby.find('rb');
-					if (rbElement.$.length) {
-						editor.fire('saveSnapshot');
-						editor.fire('lockSnapshot');
+			function cleanupEmptyRubyTags() {
+				var rubyElements = editor.document.find('ruby');
+				var modified = false;
 
-						var rbHtml = new CKEDITOR.dom.element.createFromHtml(rbElement.$[0].innerHTML);
-						rbHtml.replace(ruby);
+				for (var i = 0; i < rubyElements.count(); i++) {
+					var ruby = rubyElements.getItem(i);
+					var rtElement = ruby.find('rt');
 
-						editor.fire('unlockSnapshot');
-						modified = true;
+					if (rtElement.$.length && rtElement.$[0].innerText.trim() === '') {
+						var rbElement = ruby.find('rb');
+						if (rbElement.$.length) {
+							editor.fire('saveSnapshot');
+							editor.fire('lockSnapshot');
+
+							var rbHtml = new CKEDITOR.dom.element.createFromHtml(rbElement.$[0].innerHTML);
+							rbHtml.replace(ruby);
+
+							editor.fire('unlockSnapshot');
+							modified = true;
+						}
 					}
 				}
-			}
-			//update editor textarea
-			if (modified) {
-				//
-				editor.updateElement();
 
-				editor.fire('change');
-
-				refreshCommandState(editor);
+				if (modified) {
+					editor.updateElement();
+					refreshCommandState(editor);
+				}
 			}
 		});
 		editor.ui.addButton('TaoFurigana', {
