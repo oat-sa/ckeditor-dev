@@ -285,38 +285,38 @@ CKEDITOR.plugins.add('taofurigana', {
 			editable.attachListener(editable, 'keyup', function () {
 				refreshCommandState(editor);
 			});
+		});
+		editor.on('blur', function() {
+			// Get all ruby elements in the editor
+			var rubyElements = editor.document.find('ruby');
+			var modified = false;
 
-			editor.on('blur', function() {
-				cleanupEmptyRubyTags();
-			});
+			for (var i = 0; i < rubyElements.count(); i++) {
+				var ruby = rubyElements.getItem(i);
+				var rtElement = ruby.find('rt');
 
-			function cleanupEmptyRubyTags() {
-				var rubyElements = editor.document.find('ruby');
-				var modified = false;
+				if (rtElement.$.length && rtElement.$[0].innerText.trim() === '') {
+					var rbElement = ruby.find('rb');
+					if (rbElement.$.length) {
+						editor.fire('saveSnapshot');
+						editor.fire('lockSnapshot');
 
-				for (var i = 0; i < rubyElements.count(); i++) {
-					var ruby = rubyElements.getItem(i);
-					var rtElement = ruby.find('rt');
+						var rbHtml = new CKEDITOR.dom.element.createFromHtml(rbElement.$[0].innerHTML);
+						rbHtml.replace(ruby);
 
-					if (rtElement.$.length && rtElement.$[0].innerText.trim() === '') {
-						var rbElement = ruby.find('rb');
-						if (rbElement.$.length) {
-							editor.fire('saveSnapshot');
-							editor.fire('lockSnapshot');
-
-							var rbHtml = new CKEDITOR.dom.element.createFromHtml(rbElement.$[0].innerHTML);
-							rbHtml.replace(ruby);
-
-							editor.fire('unlockSnapshot');
-							modified = true;
-						}
+						editor.fire('unlockSnapshot');
+						modified = true;
 					}
 				}
+			}
+			//update editor textarea
+			if (modified) {
+				//
+				editor.updateElement();
 
-				if (modified) {
-					editor.updateElement();
-					refreshCommandState(editor);
-				}
+				editor.fire('change');
+
+				refreshCommandState(editor);
 			}
 		});
 		editor.ui.addButton('TaoFurigana', {
