@@ -21,22 +21,16 @@ CKEDITOR.plugins.add('interactionsource', {
 		 * @returns {Boolean} true if it's a custom wrapper div
 		 */
 		function isCustomWrapperDiv(element) {
-			// Make sure the element is valid and has required methods
 			if (!element || typeof element.getName !== 'function' || typeof element.getAttribute !== 'function') {
 				return false;
 			}
 			
 			try {
-				// Any div without data-qti-class is considered a potential wrapper
-				// But we specifically look for divs with certain class patterns
 				if (element.getName() === 'div' && !element.getAttribute('data-qti-class')) {
-					// Check for explicit custom-interaction-wrapper class
 					if (typeof element.hasClass === 'function' && element.hasClass('custom-interaction-wrapper')) {
 						return true;
 					}
 					
-					// Any div that directly contains an interaction element and has no QTI attributes
-					// should be considered a wrapper
 					if (typeof element.getChildren === 'function') {
 						var children = element.getChildren();
 						for (var i = 0; i < children.count(); i++) {
@@ -60,14 +54,12 @@ CKEDITOR.plugins.add('interactionsource', {
 		 * @returns {Boolean} true if it's an interaction element
 		 */
 		function isInteractionElement(element) {
-			// Make sure the element is valid and has getAttribute method
 			if (!element || typeof element.getAttribute !== 'function') {
 				return false;
 			}
 			
 			try {
-				var qtiClass = element.getAttribute('data-qti-class');
-				return qtiClass && qtiClass.indexOf('Interaction') > -1;
+				return element.getAttribute('data-serial') && element.getAttribute('data-qti-class');
 			} catch (e) {
 				console.error('Error in isInteractionElement:', e);
 				return false;
@@ -80,11 +72,9 @@ CKEDITOR.plugins.add('interactionsource', {
 		 */
 		function findInteractionAndWrapper() {
 			try {
-				// Reset existing references
 				editor.interactionElement = null;
 				editor.interactionWrapper = null;
 				
-				// First try to find from selection
 				var selection = editor.getSelection();
 				var selectedElement = selection && selection.getStartElement();
 				
@@ -98,7 +88,6 @@ CKEDITOR.plugins.add('interactionsource', {
 					}
 				}
 				
-				// If not found, scan the entire editable area
 				var editable = editor.editable();
 				if (editable) {
 					console.log('Scanning entire editable area for interactions');
@@ -129,16 +118,12 @@ CKEDITOR.plugins.add('interactionsource', {
 				var interactionFound = false;
 				var wrapperDiv = null;
 
-				// First look up through the parent chain
 				while (parent && !interactionFound) {
-					// Check if it's an interaction element
 					if (isInteractionElement(parent)) {
 						interactionFound = true;
 						
-						// Store the interaction element
 						editor.interactionElement = parent;
 						
-						// Check if the parent of this interaction is a custom wrapper div
 						if (typeof parent.getParent === 'function') {
 							var potentialWrapper = parent.getParent();
 							if (isCustomWrapperDiv(potentialWrapper)) {
@@ -149,8 +134,7 @@ CKEDITOR.plugins.add('interactionsource', {
 						} else {
 							editor.interactionWrapper = null;
 						}
-					} 
-					// If we find a wrapper div first, we'll still look for an interaction within it
+					}
 					else if (isCustomWrapperDiv(parent)) {
 						wrapperDiv = parent;
 					}
@@ -158,13 +142,10 @@ CKEDITOR.plugins.add('interactionsource', {
 					if (typeof parent.getParent === 'function') {
 						parent = parent.getParent();
 					} else {
-						// Break the loop if we can't get parent
 						break;
 					}
 				}
 				
-				// If we didn't find an interaction but we did find a wrapper,
-				// check if it contains an interaction as a direct child
 				if (!interactionFound && wrapperDiv && typeof wrapperDiv.getChildren === 'function') {
 					var children = wrapperDiv.getChildren();
 					for (var i = 0; i < children.count(); i++) {
@@ -196,7 +177,6 @@ CKEDITOR.plugins.add('interactionsource', {
 			}
 			
 			try {
-				// First check if this element itself is an interaction or a wrapper
 				if (isInteractionElement(element)) {
 					editor.interactionElement = element;
 					
@@ -244,12 +224,10 @@ CKEDITOR.plugins.add('interactionsource', {
 			}
 		}
 
-		// Listen for selection changes to track interactions
 		editor.on('selectionChange', function() {
 			findInteractionAndWrapper();
 		});
 		
-		// Register the interaction finder for external use
 		editor.findInteractionAndWrapper = findInteractionAndWrapper;
 	}
 });

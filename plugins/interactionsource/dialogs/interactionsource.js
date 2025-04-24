@@ -83,6 +83,15 @@ CKEDITOR.dialog.add('interactionsourcedialog', function (editor) {
 	}
 
 	/**
+	 * Normalize an interaction's serial ID to ensure it has the correct format
+	 * @param {String} serialId - The original serial ID
+	 * @returns {String} - The normalized serial ID
+	 */
+	function normalizeSerialId(serialId) {
+		return serialId || '';
+	}
+
+	/**
 	 * Checks if the interaction element is wrapped in a custom div
 	 * @param {CKEDITOR.dom.element} interactionElement - The interaction element
 	 * @returns {Object|null} An object with wrapper element and placeholder, or null if no wrapper found
@@ -90,9 +99,13 @@ CKEDITOR.dialog.add('interactionsourcedialog', function (editor) {
 	function checkForWrapper(interactionElement) {
 		refreshInteractionReference();
 
+		if (!interactionElement || !canCall(interactionElement, 'getName')) {
+			return null;
+		}
+
 		if (editor.interactionWrapper) {
 			return createWrapperInfo(
-				editor.interactionWrapper,
+				editor.interactionWrapper, 
 				interactionElement
 			);
 		}
@@ -106,7 +119,7 @@ CKEDITOR.dialog.add('interactionsourcedialog', function (editor) {
 		if (possibleWrapper) {
 			return createWrapperInfo(possibleWrapper, interactionElement);
 		}
-
+		
 		return null;
 	}
 
@@ -119,7 +132,10 @@ CKEDITOR.dialog.add('interactionsourcedialog', function (editor) {
 	function createWrapperInfo(wrapper, interaction) {
 		var className = getAttr(wrapper, 'class');
 		var serialId = getAttr(interaction, 'data-serial');
-
+		var qtiClass = getAttr(interaction, 'data-qti-class');
+		
+		serialId = normalizeSerialId(serialId, qtiClass);
+		
 		return {
 			wrapper: wrapper,
 			placeholder: renderTemplate(config.placeholderTemplate, {
@@ -136,11 +152,46 @@ CKEDITOR.dialog.add('interactionsourcedialog', function (editor) {
 	 */
 	function isWrapperElement(element) {
 		if (!element) return false;
-
+		
 		try {
-			return canCall(element, 'getName') &&
-				element.getName() === 'div' &&
-				!getAttr(element, 'data-qti-class');
+			if (!canCall(element, 'getName') || element.getName() !== 'div') {
+				return false;
+			}
+			
+			if (getAttr(element, 'data-qti-class')) {
+				return false;
+			}
+			
+			var className = getAttr(element, 'class', '');
+			var structuralClasses = ['col-', 'grid-row', 'qti-itemBody', 'item-editor-drop-area'];
+			
+			for (var i = 0; i < structuralClasses.length; i++) {
+				if (className.indexOf(structuralClasses[i]) !== -1) {
+					return false;
+				}
+			}
+			
+			if (getAttr(element, 'data-units')) {
+				return false;
+			}
+			
+			if (canCall(element, 'hasClass') && element.hasClass('custom-interaction-wrapper')) {
+				return true;
+			}
+			
+			if (canCall(element, 'getChildren')) {
+				var children = element.getChildren();
+				for (var i = 0; i < children.count(); i++) {
+					var child = children.getItem(i);
+					if (canCall(child, 'getAttribute') && 
+					    (child.getAttribute('data-qti-class') || 
+					     (child.getAttribute('data-serial') && child.getAttribute('data-serial').indexOf('interaction_') === 0))) {
+						return true;
+					}
+				}
+			}
+			
+			return false;
 		} catch (e) {
 			return false;
 		}
@@ -264,6 +315,9 @@ CKEDITOR.dialog.add('interactionsourcedialog', function (editor) {
 	 */
 	function getPlaceholderText(interactionElement, wrapperInfo) {
 		var serialId = getAttr(interactionElement, 'data-serial');
+		var qtiClass = getAttr(interactionElement, 'data-qti-class');
+		
+		serialId = normalizeSerialId(serialId, qtiClass);
 		
 		if (editor.lastInteractionHasWrapper && editor.lastWrapperClass && !wrapperInfo) {
 			return renderTemplate(config.placeholderTemplate, {
