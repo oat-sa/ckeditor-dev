@@ -24,13 +24,13 @@ CKEDITOR.plugins.add('interactionsource', {
 			if (!element || typeof element.getName !== 'function' || typeof element.getAttribute !== 'function') {
 				return false;
 			}
-			
+
 			try {
 				if (element.getName() === 'div' && !element.getAttribute('data-qti-class')) {
 					if (typeof element.hasClass === 'function' && element.hasClass('custom-interaction-wrapper')) {
 						return true;
 					}
-					
+
 					if (typeof element.getChildren === 'function') {
 						var children = element.getChildren();
 						for (var i = 0; i < children.count(); i++) {
@@ -57,7 +57,7 @@ CKEDITOR.plugins.add('interactionsource', {
 			if (!element || typeof element.getAttribute !== 'function') {
 				return false;
 			}
-			
+
 			try {
 				return element.getAttribute('data-serial') && element.getAttribute('data-qti-class');
 			} catch (e) {
@@ -74,30 +74,25 @@ CKEDITOR.plugins.add('interactionsource', {
 			try {
 				editor.interactionElement = null;
 				editor.interactionWrapper = null;
-				
+
 				var selection = editor.getSelection();
 				var selectedElement = selection && selection.getStartElement();
-				
+
 				if (selectedElement) {
-					console.log('Looking for interaction starting from selected element:', selectedElement);
 					var result = findInteractionFromElement(selectedElement);
-					
+
 					if (result) {
-						console.log('Found interaction from selection:', editor.interactionElement);
 						return true;
 					}
 				}
-				
+
 				var editable = editor.editable();
 				if (editable) {
-					console.log('Scanning entire editable area for interactions');
 					if (scanForInteractions(editable)) {
-						console.log('Found interaction from scanning editable:', editor.interactionElement);
 						return true;
 					}
 				}
-				
-				console.log('No interaction found in the editor');
+
 				return false;
 			} catch (e) {
 				console.error('Error in findInteractionAndWrapper:', e);
@@ -121,9 +116,9 @@ CKEDITOR.plugins.add('interactionsource', {
 				while (parent && !interactionFound) {
 					if (isInteractionElement(parent)) {
 						interactionFound = true;
-						
+
 						editor.interactionElement = parent;
-						
+
 						if (typeof parent.getParent === 'function') {
 							var potentialWrapper = parent.getParent();
 							if (isCustomWrapperDiv(potentialWrapper)) {
@@ -145,7 +140,7 @@ CKEDITOR.plugins.add('interactionsource', {
 						break;
 					}
 				}
-				
+
 				if (!interactionFound && wrapperDiv && typeof wrapperDiv.getChildren === 'function') {
 					var children = wrapperDiv.getChildren();
 					for (var i = 0; i < children.count(); i++) {
@@ -158,7 +153,7 @@ CKEDITOR.plugins.add('interactionsource', {
 						}
 					}
 				}
-				
+
 				return interactionFound;
 			} catch (e) {
 				console.error('Error in findInteractionFromElement:', e);
@@ -175,11 +170,11 @@ CKEDITOR.plugins.add('interactionsource', {
 			if (!element) {
 				return false;
 			}
-			
+
 			try {
 				if (isInteractionElement(element)) {
 					editor.interactionElement = element;
-					
+
 					if (typeof element.getParent === 'function') {
 						var parent = element.getParent();
 						if (isCustomWrapperDiv(parent)) {
@@ -192,7 +187,7 @@ CKEDITOR.plugins.add('interactionsource', {
 					}
 					return true;
 				}
-				
+
 				if (isCustomWrapperDiv(element)) {
 					if (typeof element.getChildren === 'function') {
 						var children = element.getChildren();
@@ -206,7 +201,7 @@ CKEDITOR.plugins.add('interactionsource', {
 						}
 					}
 				}
-				
+
 				// Then recursively check children
 				if (typeof element.getChildren === 'function') {
 					var children = element.getChildren();
@@ -216,7 +211,7 @@ CKEDITOR.plugins.add('interactionsource', {
 						}
 					}
 				}
-				
+
 				return false;
 			} catch (e) {
 				console.error('Error in scanForInteractions:', e);
@@ -227,7 +222,7 @@ CKEDITOR.plugins.add('interactionsource', {
 		editor.on('selectionChange', function() {
 			findInteractionAndWrapper();
 		});
-		
+
 		editor.findInteractionAndWrapper = findInteractionAndWrapper;
 	}
 });
