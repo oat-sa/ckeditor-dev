@@ -105,7 +105,7 @@ CKEDITOR.dialog.add('interactionsourcedialog', function (editor) {
 
 		if (editor.interactionWrapper) {
 			return createWrapperInfo(
-				editor.interactionWrapper, 
+				editor.interactionWrapper,
 				interactionElement
 			);
 		}
@@ -119,7 +119,7 @@ CKEDITOR.dialog.add('interactionsourcedialog', function (editor) {
 		if (possibleWrapper) {
 			return createWrapperInfo(possibleWrapper, interactionElement);
 		}
-		
+
 		return null;
 	}
 
@@ -132,10 +132,9 @@ CKEDITOR.dialog.add('interactionsourcedialog', function (editor) {
 	function createWrapperInfo(wrapper, interaction) {
 		var className = getAttr(wrapper, 'class');
 		var serialId = getAttr(interaction, 'data-serial');
-		var qtiClass = getAttr(interaction, 'data-qti-class');
-		
-		serialId = normalizeSerialId(serialId, qtiClass);
-		
+
+		serialId = normalizeSerialId(serialId);
+
 		return {
 			wrapper: wrapper,
 			placeholder: renderTemplate(config.placeholderTemplate, {
@@ -152,45 +151,45 @@ CKEDITOR.dialog.add('interactionsourcedialog', function (editor) {
 	 */
 	function isWrapperElement(element) {
 		if (!element) return false;
-		
+
 		try {
 			if (!canCall(element, 'getName') || element.getName() !== 'div') {
 				return false;
 			}
-			
+
 			if (getAttr(element, 'data-qti-class')) {
 				return false;
 			}
-			
+
 			var className = getAttr(element, 'class', '');
 			var structuralClasses = ['col-', 'grid-row', 'qti-itemBody', 'item-editor-drop-area'];
-			
+
 			for (var i = 0; i < structuralClasses.length; i++) {
 				if (className.indexOf(structuralClasses[i]) !== -1) {
 					return false;
 				}
 			}
-			
+
 			if (getAttr(element, 'data-units')) {
 				return false;
 			}
-			
+
 			if (canCall(element, 'hasClass') && element.hasClass('custom-interaction-wrapper')) {
 				return true;
 			}
-			
+
 			if (canCall(element, 'getChildren')) {
 				var children = element.getChildren();
 				for (var i = 0; i < children.count(); i++) {
 					var child = children.getItem(i);
-					if (canCall(child, 'getAttribute') && 
-					    (child.getAttribute('data-qti-class') || 
+					if (canCall(child, 'getAttribute') &&
+					    (child.getAttribute('data-qti-class') ||
 					     (child.getAttribute('data-serial') && child.getAttribute('data-serial').indexOf('interaction_') === 0))) {
 						return true;
 					}
 				}
 			}
-			
+
 			return false;
 		} catch (e) {
 			return false;
@@ -262,15 +261,16 @@ CKEDITOR.dialog.add('interactionsourcedialog', function (editor) {
 				throw new Error('Interaction element not found.');
 			}
 
-			var hasWrapperDiv = /^\s*<div[^>]*>([\s\S]*)<\/div>\s*$/i.test(newData);
-			editor.lastInteractionHasWrapper = hasWrapperDiv;
+			var fragment = CKEDITOR.htmlParser.fragment.fromHtml(newData);
+			var hasWrapperDiv = fragment.children.length === 1 &&
+				fragment.children[0].name === 'div';
 
 			if (hasWrapperDiv) {
-				var classMatch = newData.match(/^\s*<div[^>]*class=["']([^"']*)["'][^>]*>/i);
-				if (classMatch && classMatch[1]) {
-					editor.lastWrapperClass = classMatch[1];
-				}
+				var wrapperDiv = fragment.children[0];
+				editor.lastWrapperClass = wrapperDiv.attributes && wrapperDiv.attributes.class || '';
 			}
+
+			editor.lastInteractionHasWrapper = hasWrapperDiv;
 
 			dialog.hide();
 
@@ -294,8 +294,8 @@ CKEDITOR.dialog.add('interactionsourcedialog', function (editor) {
 	 */
 	function getWrapperExampleHTML() {
 		var lang = editor.lang.interactionsource;
-		
-		var html = '<div id="interaction-wrapper-info" style="' + config.css.wrapperInfo + '">' +
+
+		return '<div id="interaction-wrapper-info" style="' + config.css.wrapperInfo + '">' +
 			'<p style="' + config.css.example + '">' + lang.wrapperExample + '<br>' +
 			'<code style="' + config.css.codeBlock + '">' +
 			'&lt;div class="foobar"&gt;<br>' +
@@ -303,8 +303,6 @@ CKEDITOR.dialog.add('interactionsourcedialog', function (editor) {
 			'&lt;/div&gt;</code></p>' +
 			'<p style="' + config.css.example + '"><em>' + lang.styleEditorNote + '</em></p>' +
 			'</div>';
-			
-		return html;
 	}
 
 	/**
@@ -315,10 +313,9 @@ CKEDITOR.dialog.add('interactionsourcedialog', function (editor) {
 	 */
 	function getPlaceholderText(interactionElement, wrapperInfo) {
 		var serialId = getAttr(interactionElement, 'data-serial');
-		var qtiClass = getAttr(interactionElement, 'data-qti-class');
-		
-		serialId = normalizeSerialId(serialId, qtiClass);
-		
+
+		serialId = normalizeSerialId(serialId);
+
 		if (editor.lastInteractionHasWrapper && editor.lastWrapperClass && !wrapperInfo) {
 			return renderTemplate(config.placeholderTemplate, {
 				className: editor.lastWrapperClass,
@@ -343,9 +340,9 @@ CKEDITOR.dialog.add('interactionsourcedialog', function (editor) {
 
 		onShow: function () {
 			var dialog = this;
-			
+
 			refreshInteractionReference();
-			
+
 			var interactionElement = editor.interactionElement;
 
 			if (!interactionElement) {
@@ -362,7 +359,7 @@ CKEDITOR.dialog.add('interactionsourcedialog', function (editor) {
 
 				this.setValueOf('main', 'data', placeholder);
 				state.oldData = placeholder;
-				
+
 			} catch (e) {
 				console.error('Error getting simplified interaction HTML:', e);
 				showErrorDialog(editor, 'Error retrieving simplified interaction HTML: ' + e.message);
@@ -380,9 +377,7 @@ CKEDITOR.dialog.add('interactionsourcedialog', function (editor) {
 				return true;
 			}
 
-			setTimeout(function () {
-				applyChanges(that);
-			});
+			applyChanges(that);
 
 			return false;
 		},
