@@ -16,6 +16,38 @@ CKEDITOR.plugins.add('interactionsource', {
 		});
 
 		/**
+		 * Check if element is a boundary element
+		 * @param {CKEDITOR.dom.element} element - The element to check
+		 * @returns {Boolean} true if it's a boundary element
+		 */
+		function isBoundaryElement(element) {
+			if (!element || typeof element.getName !== 'function' || element.getName() !== 'div') {
+				return false;
+			}
+
+			try {
+				var className = element.getAttribute('class') || '';
+				var dataUnits = element.getAttribute('data-units') || '';
+
+				if (className.indexOf('col-12') !== -1 && dataUnits === '12') {
+					return true;
+				}
+
+				var boundaryClasses = ['grid-row', 'qti-itemBody', 'item-editor-drop-area'];
+				for (var i = 0; i < boundaryClasses.length; i++) {
+					if (className.indexOf(boundaryClasses[i]) !== -1) {
+						return true;
+					}
+				}
+
+				return false;
+			} catch (e) {
+				console.error('Error in isBoundaryElement:', e);
+				return false;
+			}
+		}
+
+		/**
 		 * Check if element is a custom wrapper div (not a QTI element)
 		 * @param {CKEDITOR.dom.element} element - The element to check
 		 * @returns {Boolean} true if it's a custom wrapper div
@@ -27,14 +59,18 @@ CKEDITOR.plugins.add('interactionsource', {
 
 			try {
 				if (element.getName() === 'div' && !element.getAttribute('data-qti-class')) {
+					if (isBoundaryElement(element)) {
+						return false;
+					}
+
 					if (typeof element.hasClass === 'function' && element.hasClass('custom-interaction-wrapper')) {
 						return true;
 					}
 
 					if (typeof element.getChildren === 'function') {
-						var children = element.getChildren();
-						for (var i = 0; i < children.count(); i++) {
-							var child = children.getItem(i);
+						var childrenElements = element.getChildren();
+						for (var i = 0; i < childrenElements.count(); i++) {
+							var child = childrenElements.getItem(i);
 							if (isInteractionElement(child)) {
 								return true;
 							}
@@ -67,20 +103,19 @@ CKEDITOR.plugins.add('interactionsource', {
 		}
 
 		/**
-		 * Find and store the interaction and its wrapper in the editor
+		 * Find and store the interaction in the editor
 		 * This can be called directly when needed
 		 */
 		function findInteractionAndWrapper() {
 			try {
 				editor.interactionElement = null;
-				editor.interactionWrapper = null;
+				editor.interactionWrapper = null; // Keep for backwards compatibility
 
 				var selection = editor.getSelection();
 				var selectedElement = selection && selection.getStartElement();
 
 				if (selectedElement) {
 					var result = findInteractionFromElement(selectedElement);
-
 					if (result) {
 						return true;
 					}
@@ -116,7 +151,6 @@ CKEDITOR.plugins.add('interactionsource', {
 				while (parent && !interactionFound) {
 					if (isInteractionElement(parent)) {
 						interactionFound = true;
-
 						editor.interactionElement = parent;
 
 						if (typeof parent.getParent === 'function') {
@@ -136,17 +170,21 @@ CKEDITOR.plugins.add('interactionsource', {
 
 					if (typeof parent.getParent === 'function') {
 						parent = parent.getParent();
+
+						if (isBoundaryElement(parent)) {
+							break;
+						}
 					} else {
 						break;
 					}
 				}
 
 				if (!interactionFound && wrapperDiv && typeof wrapperDiv.getChildren === 'function') {
-					var children = wrapperDiv.getChildren();
-					for (var i = 0; i < children.count(); i++) {
-						var child = children.getItem(i);
-						if (isInteractionElement(child)) {
-							editor.interactionElement = child;
+					var wrapperChildren = wrapperDiv.getChildren();
+					for (var j = 0; j < wrapperChildren.count(); j++) {
+						var wrapperChild = wrapperChildren.getItem(j);
+						if (isInteractionElement(wrapperChild)) {
+							editor.interactionElement = wrapperChild;
 							editor.interactionWrapper = wrapperDiv;
 							interactionFound = true;
 							break;
@@ -190,11 +228,11 @@ CKEDITOR.plugins.add('interactionsource', {
 
 				if (isCustomWrapperDiv(element)) {
 					if (typeof element.getChildren === 'function') {
-						var children = element.getChildren();
-						for (var i = 0; i < children.count(); i++) {
-							var child = children.getItem(i);
-							if (isInteractionElement(child)) {
-								editor.interactionElement = child;
+						var elementChildren = element.getChildren();
+						for (var k = 0; k < elementChildren.count(); k++) {
+							var elementChild = elementChildren.getItem(k);
+							if (isInteractionElement(elementChild)) {
+								editor.interactionElement = elementChild;
 								editor.interactionWrapper = element;
 								return true;
 							}
@@ -202,11 +240,10 @@ CKEDITOR.plugins.add('interactionsource', {
 					}
 				}
 
-				// Then recursively check children
 				if (typeof element.getChildren === 'function') {
-					var children = element.getChildren();
-					for (var i = 0; i < children.count(); i++) {
-						if (scanForInteractions(children.getItem(i))) {
+					var scanChildren = element.getChildren();
+					for (var l = 0; l < scanChildren.count(); l++) {
+						if (scanForInteractions(scanChildren.getItem(l))) {
 							return true;
 						}
 					}

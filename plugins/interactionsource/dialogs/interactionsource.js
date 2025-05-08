@@ -4,14 +4,15 @@ CKEDITOR.dialog.add('interactionsourcedialog', function (editor) {
 			width: Math.min(CKEDITOR.document.getWindow().getViewPaneSize().width - 70, 800),
 			height: CKEDITOR.document.getWindow().getViewPaneSize().height / 1.5
 		},
-		placeholderTemplate: '<div class="{{className}}">\n<interaction_{{serialId}}>\n</div>',
+		placeholderTemplate: '{{wrapperDivs}}<interaction_{{serialId}}>\n{{closingDivs}}',
 		simpleTemplate: '<interaction_{{serialId}}>',
 		css: {
 			wrapperInfo: 'margin-bottom: 10px; padding: 5px; border-left: 3px solid #ccc; background-color: #f9f9f9;',
 			example: 'margin: 3px 0 0; color: #666; font-style: italic;',
 			codeBlock: 'display: block; margin-top: 5px; padding: 5px; background: #f0f0f0; border: 1px solid #ddd; font-family: monospace;',
 			textarea: 'cursor:auto; width:100%; min-width:{{width}}px; max-width:unset; height:{{height}}px; tab-size:4; text-align:left; font-family:monospace;'
-		}
+		},
+		boundaryClasses: ['col-12', 'grid-row', 'qti-itemBody', 'item-editor-drop-area']
 	};
 
 	var state = {
@@ -25,7 +26,7 @@ CKEDITOR.dialog.add('interactionsourcedialog', function (editor) {
 	 * @returns {String} - The rendered template
 	 */
 	function renderTemplate(template, data) {
-		return template.replace(/\{\{(\w+)\}\}/g, function(match, key) {
+		return template.replace(/\{\{(\w+)}}/g, function(match, key) {
 			return data[key] !== undefined ? data[key] : match;
 		});
 	}
@@ -92,145 +93,142 @@ CKEDITOR.dialog.add('interactionsourcedialog', function (editor) {
 	}
 
 	/**
-	 * Checks if the interaction element is wrapped in a custom div
-	 * @param {CKEDITOR.dom.element} interactionElement - The interaction element
-	 * @returns {Object|null} An object with wrapper element and placeholder, or null if no wrapper found
+	 * Check if element is a boundary element where we should stop collecting wrappers
+	 * @param {CKEDITOR.dom.element} element - The element to check
+	 * @returns {Boolean} - True if element is a boundary
 	 */
-	function checkForWrapper(interactionElement) {
+	function isBoundaryElement(element) {
+		if (!element || !canCall(element, 'getName') || element.getName() !== 'div') {
+			return false;
+		}
+
+		var className = getAttr(element, 'class', '');
+		var dataUnits = getAttr(element, 'data-units', '');
+
+		if (className.indexOf('col-12') !== -1 && dataUnits === '12') {
+			return true;
+		}
+
+		for (var i = 0; i < config.boundaryClasses.length; i++) {
+			if (className.indexOf(config.boundaryClasses[i]) !== -1) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Collect all wrapper divs up to a boundary element
+	 * @param {CKEDITOR.dom.element} interactionElement - The interaction element
+	 * @returns {Object|null} An object with wrapper elements and placeholder, or null if no wrapper found
+	 */
+	function collectAllWrappers(interactionElement) {
 		refreshInteractionReference();
 
 		if (!interactionElement || !canCall(interactionElement, 'getName')) {
 			return null;
 		}
 
-		if (editor.interactionWrapper) {
-			return createWrapperInfo(
-				editor.interactionWrapper,
-				interactionElement
-			);
+		var wrappers = [];
+		var current = interactionElement;
+		var maxDepth = 10; // Prevent infinite loops
+
+		while (current && maxDepth > 0) {
+			var parent = canCall(current, 'getParent') ? current.getParent() : null;
+
+			if (!parent) {
+				break;
+			}
+
+			if (canCall(parent, 'getName') && parent.getName() === 'div') {
+				if (isBoundaryElement(parent)) {
+					break;
+				}
+
+				if (!getAttr(parent, 'data-qti-class') && !getAttr(parent, 'data-html-editable')) {
+					wrappers.push(parent);
+				}
+			}
+
+			current = parent;
+			maxDepth--;
 		}
 
-		var parent = canCall(interactionElement, 'getParent') ? interactionElement.getParent() : null;
-		if (parent && isWrapperElement(parent)) {
-			return createWrapperInfo(parent, interactionElement);
-		}
-
-		var possibleWrapper = findClosestWrapperDiv(interactionElement);
-		if (possibleWrapper) {
-			return createWrapperInfo(possibleWrapper, interactionElement);
+		if (wrappers.length > 0) {
+			return createMultiWrapperInfo(wrappers, interactionElement);
 		}
 
 		return null;
 	}
 
 	/**
-	 * Create wrapper info object with standardized format
-	 * @param {CKEDITOR.dom.element} wrapper - The wrapper element
+	 * Create wrapper info object with all nested wrappers
+	 * @param {Array} wrappers - Array of wrapper elements (outermost last)
 	 * @param {CKEDITOR.dom.element} interaction - The interaction element
-	 * @returns {Object} - Object with wrapper and placeholder
+	 * @returns {Object} - Object with wrappers and placeholder
 	 */
-	function createWrapperInfo(wrapper, interaction) {
-		var className = getAttr(wrapper, 'class');
+	function createMultiWrapperInfo(wrappers, interaction) {
 		var serialId = getAttr(interaction, 'data-serial');
-
 		serialId = normalizeSerialId(serialId);
 
+		var wrapperDivs = '';
+		var closingDivs = '';
+
+		for (var i = wrappers.length - 1; i >= 0; i--) {
+			var wrapper = wrappers[i];
+			var className = getAttr(wrapper, 'class', '');
+			var id = getAttr(wrapper, 'id', '');
+			var dataAttrs = collectDataAttributes(wrapper);
+
+			wrapperDivs += '<div';
+			if (className) {
+				wrapperDivs += ' class="' + className + '"';
+			}
+			if (id) {
+				wrapperDivs += ' id="' + id + '"';
+			}
+			if (dataAttrs) {
+				wrapperDivs += dataAttrs;
+			}
+			wrapperDivs += '>\n';
+
+			closingDivs += '</div>\n';
+		}
+
 		return {
-			wrapper: wrapper,
+			wrappers: wrappers,
 			placeholder: renderTemplate(config.placeholderTemplate, {
-				className: className,
-				serialId: serialId
+				wrapperDivs: wrapperDivs,
+				serialId: serialId,
+				closingDivs: closingDivs
 			})
 		};
 	}
 
 	/**
-	 * Check if an element is a wrapper div (not a QTI element)
-	 * @param {CKEDITOR.dom.element} element - The element to check
-	 * @returns {Boolean} - True if element is a wrapper
+	 * Collect all data- attributes from an element
+	 * @param {CKEDITOR.dom.element} element - The element
+	 * @returns {String} - String of data attributes
 	 */
-	function isWrapperElement(element) {
-		if (!element) return false;
-
-		try {
-			if (!canCall(element, 'getName') || element.getName() !== 'div') {
-				return false;
-			}
-
-			if (getAttr(element, 'data-qti-class')) {
-				return false;
-			}
-
-			var className = getAttr(element, 'class', '');
-			var structuralClasses = ['col-', 'grid-row', 'qti-itemBody', 'item-editor-drop-area'];
-
-			for (var i = 0; i < structuralClasses.length; i++) {
-				if (className.indexOf(structuralClasses[i]) !== -1) {
-					return false;
-				}
-			}
-
-			if (getAttr(element, 'data-units')) {
-				return false;
-			}
-
-			if (canCall(element, 'hasClass') && element.hasClass('custom-interaction-wrapper')) {
-				return true;
-			}
-
-			if (canCall(element, 'getChildren')) {
-				var children = element.getChildren();
-				for (var i = 0; i < children.count(); i++) {
-					var child = children.getItem(i);
-					if (canCall(child, 'getAttribute') &&
-					    (child.getAttribute('data-qti-class') ||
-					     (child.getAttribute('data-serial') && child.getAttribute('data-serial').indexOf('interaction_') === 0))) {
-						return true;
-					}
-				}
-			}
-
-			return false;
-		} catch (e) {
-			return false;
-		}
-	}
-
-	/**
-	 * Find the closest wrapper div by checking parent elements
-	 * @param {CKEDITOR.dom.element} element - The element to start from
-	 * @returns {CKEDITOR.dom.element|null} The wrapper div or null if not found
-	 */
-	function findClosestWrapperDiv(element) {
-		if (!canCall(element, 'getParent')) {
-			return null;
+	function collectDataAttributes(element) {
+		var result = '';
+		if (!element || !canCall(element, 'getAttributes')) {
+			return result;
 		}
 
 		try {
-			var current = element;
-			var maxDepth = 5;
-
-			while (current && maxDepth > 0) {
-				var parent = current.getParent();
-
-				if (isWrapperElement(parent)) {
-					if ((canCall(parent, 'hasClass') && parent.hasClass('custom-interaction-wrapper')) ||
-						(getAttr(parent, 'class') &&
-						!getAttr(parent, 'data-serial') &&
-						!getAttr(parent, 'data-html-editable'))) {
-						return parent;
-					}
+			var attributes = element.getAttributes();
+			for (var attrName in attributes) {
+				if (attrName.indexOf('data-') === 0 && attrName !== 'data-qti-class') {
+					result += ' ' + attrName + '="' + attributes[attrName] + '"';
 				}
-
-				current = parent;
-				maxDepth--;
 			}
-
-			return null;
 		} catch (e) {
-			console.error('Error in findClosestWrapperDiv:', e);
-			return null;
+			console.error('Error collecting data attributes:', e);
 		}
+
+		return result;
 	}
 
 	/**
@@ -298,8 +296,12 @@ CKEDITOR.dialog.add('interactionsourcedialog', function (editor) {
 		return '<div id="interaction-wrapper-info" style="' + config.css.wrapperInfo + '">' +
 			'<p style="' + config.css.example + '">' + lang.wrapperExample + '<br>' +
 			'<code style="' + config.css.codeBlock + '">' +
-			'&lt;div class="foobar"&gt;<br>' +
-			'&nbsp;&nbsp;&lt;interaction_serial_number&gt;<br>' +
+			'&lt;div class="outer-wrapper"&gt;<br>' +
+			'&nbsp;&nbsp;&lt;div class="middle-wrapper"&gt;<br>' +
+			'&nbsp;&nbsp;&nbsp;&nbsp;&lt;div class="inner-wrapper"&gt;<br>' +
+			'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;interaction_serial_number&gt;<br>' +
+			'&nbsp;&nbsp;&nbsp;&nbsp;&lt;/div&gt;<br>' +
+			'&nbsp;&nbsp;&lt;/div&gt;<br>' +
 			'&lt;/div&gt;</code></p>' +
 			'<p style="' + config.css.example + '"><em>' + lang.styleEditorNote + '</em></p>' +
 			'</div>';
@@ -308,24 +310,17 @@ CKEDITOR.dialog.add('interactionsourcedialog', function (editor) {
 	/**
 	 * Get the placeholder text based on wrapper status
 	 * @param {CKEDITOR.dom.element} interactionElement - The interaction element
-	 * @param {Object} wrapperInfo - Wrapper information if exists
 	 * @returns {String} - The placeholder text to display in the dialog
 	 */
-	function getPlaceholderText(interactionElement, wrapperInfo) {
+	function getPlaceholderText(interactionElement) {
 		var serialId = getAttr(interactionElement, 'data-serial');
-
 		serialId = normalizeSerialId(serialId);
 
-		if (editor.lastInteractionHasWrapper && editor.lastWrapperClass && !wrapperInfo) {
-			return renderTemplate(config.placeholderTemplate, {
-				className: editor.lastWrapperClass,
-				serialId: serialId
-			});
-		}
-		else if (wrapperInfo) {
+		var wrapperInfo = collectAllWrappers(interactionElement);
+
+		if (wrapperInfo) {
 			return wrapperInfo.placeholder;
-		}
-		else {
+		} else {
 			return renderTemplate(config.simpleTemplate, {
 				serialId: serialId
 			});
@@ -354,12 +349,9 @@ CKEDITOR.dialog.add('interactionsourcedialog', function (editor) {
 			}
 
 			try {
-				var wrapperInfo = checkForWrapper(interactionElement);
-				var placeholder = getPlaceholderText(interactionElement, wrapperInfo);
-
+				var placeholder = getPlaceholderText(interactionElement);
 				this.setValueOf('main', 'data', placeholder);
 				state.oldData = placeholder;
-
 			} catch (e) {
 				console.error('Error getting simplified interaction HTML:', e);
 				showErrorDialog(editor, 'Error retrieving simplified interaction HTML: ' + e.message);
