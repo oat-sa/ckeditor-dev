@@ -7,5 +7,21 @@ CKEDITOR.plugins.setLang('interactionsource', 'en', {
 	wrapperApplied: 'Custom wrappers have been applied',
 	wrapperRemoved: 'Custom wrappers have been removed',
 	wrapperClassAdded: 'Class added to wrapper',
-	wrapperClassRemoved: 'Class removed from wrapper'
+	wrapperClassRemoved: 'Class removed from wrapper',
+	validationError: 'HTML Validation Error',
+	missingClosingTag: 'Missing closing tag',
+	missingOpeningTag: 'Missing opening tag',
+	missingInteraction: 'Missing interaction placeholder. Every interaction must include <interaction_xxx> tag.',
+	missingDivClosingTags: 'There are {0} missing closing </div> tag(s)',
+	missingDivOpeningTags: 'There are {0} extra closing </div> tag(s)',
+	invalidTags: 'Invalid or misspelled HTML tags',
+	unmatchedClosingTag: 'Unmatched closing tag',
+	unclosedTags: 'Unclosed HTML tags',
+	generalValidationError: 'HTML structure is invalid',
+	line: 'line',
+	noEditedData: 'No edited data available',
+	noInteractionFound: 'No interaction found or not currently editing an interaction',
+	updateError: 'Error updating interaction',
+	retrieveError: 'Error retrieving simplified interaction HTML',
+	validationTip: 'Make sure all HTML tags are properly closed and the interaction placeholder is included'
 });

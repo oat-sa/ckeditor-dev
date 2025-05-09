@@ -10,14 +10,175 @@ CKEDITOR.dialog.add('interactionsourcedialog', function (editor) {
 			wrapperInfo: 'margin-bottom: 10px; padding: 5px; border-left: 3px solid #ccc; background-color: #f9f9f9;',
 			example: 'margin: 3px 0 0; color: #666; font-style: italic;',
 			codeBlock: 'display: block; margin-top: 5px; padding: 5px; background: #f0f0f0; border: 1px solid #ddd; font-family: monospace;',
-			textarea: 'cursor:auto; width:100%; min-width:{{width}}px; max-width:unset; height:{{height}}px; tab-size:4; text-align:left; font-family:monospace;'
+			textarea: 'cursor:auto; width:100%; min-width:{{width}}px; max-width:unset; height:{{height}}px; tab-size:4; text-align:left; font-family:monospace;',
+			errorMessage: 'padding: 8px; margin-top: 8px; background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; border-radius: 4px;'
 		},
 		boundaryClasses: ['col-12', 'grid-row', 'qti-itemBody', 'item-editor-drop-area']
 	};
 
 	var state = {
-		oldData: null
+		oldData: null,
+		validationError: null
 	};
+
+	/**
+	 * Simple HTML validation for common errors
+	 * @param {String} html - The HTML to validate
+	 * @returns {Object} - Object with isValid flag and error message if any
+	 */
+	function validateHtml(html) {
+		var lang = editor.lang.interactionsource;
+		var result = {
+			isValid: true,
+			error: null
+		};
+
+		try {
+			if (html.indexOf('<interaction_') === -1) {
+				result.isValid = false;
+				result.error = lang.missingInteraction;
+				return result;
+			}
+
+			var openDivs = (html.match(/<div/g) || []).length;
+			var closeDivs = (html.match(/<\/div>/g) || []).length;
+
+			if (openDivs !== closeDivs) {
+				result.isValid = false;
+				if (openDivs > closeDivs) {
+					result.error = lang.missingClosingTag + ': ' +
+						lang.missingDivClosingTags.replace('{0}', (openDivs - closeDivs));
+				} else {
+					result.error = lang.missingOpeningTag + ': ' +
+						lang.missingDivOpeningTags.replace('{0}', (closeDivs - openDivs));
+				}
+				return result;
+			}
+
+			var invalidTagMatch = html.match(/<\/?([a-z][a-z0-9_]*)[^>]*>/gi);
+			if (invalidTagMatch) {
+				var validHtmlTags = ['div', 'span', 'p', 'br', 'hr', 'strong', 'em', 'i', 'b', 'u', 's', 'code', 'pre'];
+				var invalidTags = [];
+
+				for (var i = 0; i < invalidTagMatch.length; i++) {
+					var tag = invalidTagMatch[i].match(/<\/?([a-z][a-z0-9_]*)[^>]*>/i);
+					if (tag && tag[1]) {
+						var tagName = tag[1].toLowerCase();
+
+						if (tagName.indexOf('interaction_') === 0) {
+							continue;
+						}
+
+						if (validHtmlTags.indexOf(tagName) === -1 && invalidTags.indexOf(tagName) === -1) {
+							invalidTags.push(tagName);
+						}
+					}
+				}
+
+				if (invalidTags.length > 0) {
+					result.isValid = false;
+					result.error = lang.invalidTags + ': ' + invalidTags.join(', ');
+					return result;
+				}
+			}
+
+			var stack = [];
+			var lines = html.split('\n');
+			for (var lineIndex = 0; lineIndex < lines.length; lineIndex++) {
+				var line = lines[lineIndex];
+				var tagMatches = line.match(/<\/?([a-z][a-z0-9_]*)[^>]*>/gi);
+
+				if (tagMatches) {
+					for (var j = 0; j < tagMatches.length; j++) {
+						var tagMatch = tagMatches[j];
+
+						if (tagMatch.indexOf('/>') !== -1) {
+							continue;
+						}
+
+						if (tagMatch.indexOf('<interaction_') === 0 || tagMatch.indexOf('</interaction_') === 0) {
+							continue;
+						}
+
+						if (tagMatch.indexOf('</') === 0) {
+							var closingTag = tagMatch.match(/<\/([a-z][a-z0-9_]*)[^>]*>/i);
+							if (closingTag && closingTag[1]) {
+								var closingTagName = closingTag[1].toLowerCase();
+
+								if (stack.length === 0 || stack.pop() !== tagName) {
+									result.isValid = false;
+									result.error = lang.unmatchedClosingTag + ': ' + closingTagName +
+										' (' + lang.line + ' ' + (lineIndex + 1) + ')';
+									return result;
+								}
+							}
+						}
+						else {
+							var openingTag = tagMatch.match(/<([a-z][a-z0-9_]*)[^>]*>/i);
+							if (openingTag && openingTag[1]) {
+								var openingTagName = openingTag[1].toLowerCase();
+								stack.push(openingTagName);
+							}
+						}
+					}
+				}
+			}
+
+			if (stack.length > 0) {
+				result.isValid = false;
+				result.error = lang.unclosedTags + ': ' + stack.join(', ');
+				return result;
+			}
+
+			return result;
+		} catch (e) {
+			result.isValid = false;
+			result.error = lang.generalValidationError + ': ' + e.message;
+			return result;
+		}
+	}
+
+	/**
+	 * Update the error message in the dialog
+	 * @param {CKEDITOR.dialog} dialog - The dialog instance
+	 * @param {String|null} errorMessage - The error message or null to clear
+	 */
+	function updateErrorMessage(dialog, errorMessage) {
+		var errorContainer = dialog.getContentElement('main', 'errorContainer');
+
+		if (errorContainer && errorContainer.getElement()) {
+			var element = errorContainer.getElement();
+
+			if (errorMessage) {
+				var safeErrorHtml = '<div style="' + config.css.errorMessage + '">' +
+					'<strong>' + editor.lang.interactionsource.validationError + ':</strong> ' +
+					errorMessage.replace(/</g, '&lt;').replace(/>/g, '&gt;') +
+					'</div>';
+
+				element.setHtml(safeErrorHtml);
+				element.show();
+			} else {
+				element.setHtml('');
+				element.hide();
+			}
+		}
+
+		state.validationError = errorMessage;
+	}
+
+	/**
+	 * Validate the current HTML in the dialog
+	 * @param {CKEDITOR.dialog} dialog - The dialog instance
+	 * @returns {Boolean} - True if HTML is valid
+	 */
+	function validateDialog(dialog) {
+		var html = dialog.getValueOf('main', 'data');
+		var validation = validateHtml(html);
+
+		updateErrorMessage(dialog, validation.isValid ? null : validation.error);
+
+		return validation.isValid;
+	}
 
 	/**
 	 * Template rendering helper
@@ -246,17 +407,21 @@ CKEDITOR.dialog.add('interactionsourcedialog', function (editor) {
 	 * @returns {Boolean} - True if changes were applied successfully
 	 */
 	function applyChanges(dialog) {
+		if (!validateDialog(dialog)) {
+			return false;
+		}
+
 		editor.focus();
 		try {
 			var newData = dialog.getValueOf('main', 'data');
 
 			if (!newData) {
-				throw new Error('No edited data available');
+				throw new Error(editor.lang.interactionsource.noEditedData);
 			}
 
 			var interactionEl = editor.interactionElement;
 			if (!interactionEl) {
-				throw new Error('Interaction element not found.');
+				throw new Error(editor.lang.interactionsource.noInteractionFound);
 			}
 
 			var fragment = CKEDITOR.htmlParser.fragment.fromHtml(newData);
@@ -265,7 +430,7 @@ CKEDITOR.dialog.add('interactionsourcedialog', function (editor) {
 
 			if (hasWrapperDiv) {
 				var wrapperDiv = fragment.children[0];
-				editor.lastWrapperClass = wrapperDiv.attributes && wrapperDiv.attributes.class || '';
+				editor.lastWrapperClass = wrapperDiv.attributes && wrapperDiv.attributes['class'] || '';
 			}
 
 			editor.lastInteractionHasWrapper = hasWrapperDiv;
@@ -280,8 +445,7 @@ CKEDITOR.dialog.add('interactionsourcedialog', function (editor) {
 			return true;
 		} catch (e) {
 			console.error('Error applying changes:', e);
-			var errorMessage = 'Error updating interaction: ' + e.message;
-			showErrorDialog(editor, errorMessage);
+			updateErrorMessage(dialog, editor.lang.interactionsource.updateError + ': ' + e.message);
 			return false;
 		}
 	}
@@ -341,7 +505,7 @@ CKEDITOR.dialog.add('interactionsourcedialog', function (editor) {
 			var interactionElement = editor.interactionElement;
 
 			if (!interactionElement) {
-				showErrorDialog(editor, 'No interaction found or not currently editing an interaction.');
+				showErrorDialog(editor, editor.lang.interactionsource.noInteractionFound);
 				setTimeout(function () {
 					dialog.hide();
 				}, 0);
@@ -352,9 +516,11 @@ CKEDITOR.dialog.add('interactionsourcedialog', function (editor) {
 				var placeholder = getPlaceholderText(interactionElement);
 				this.setValueOf('main', 'data', placeholder);
 				state.oldData = placeholder;
+
+				updateErrorMessage(dialog, null);
 			} catch (e) {
 				console.error('Error getting simplified interaction HTML:', e);
-				showErrorDialog(editor, 'Error retrieving simplified interaction HTML: ' + e.message);
+				showErrorDialog(editor, editor.lang.interactionsource.retrieveError + ': ' + e.message);
 				setTimeout(function () {
 					dialog.hide();
 				}, 0);
@@ -369,9 +535,11 @@ CKEDITOR.dialog.add('interactionsourcedialog', function (editor) {
 				return true;
 			}
 
-			applyChanges(that);
+			if (!validateDialog(that)) {
+				return false;
+			}
 
-			return false;
+			return applyChanges(that);
 		},
 
 		contents: [{
@@ -388,7 +556,16 @@ CKEDITOR.dialog.add('interactionsourcedialog', function (editor) {
 					id: 'data',
 					dir: 'ltr',
 					inputStyle: renderTemplate(config.css.textarea, config.size),
-					'class': 'cke_source'
+					'class': 'cke_source',
+					onKeyUp: function() {
+						validateDialog(this.getDialog());
+					}
+				},
+				{
+					type: 'html',
+					id: 'errorContainer',
+					html: '',
+					style: 'display:none'
 				}
 			]
 		}]
