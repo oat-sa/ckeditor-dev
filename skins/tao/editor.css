@@ -1489,6 +1489,10 @@ Usage:
     display: inline;
 }
 
+.cke_button__interactionsource_label {
+	display: inline;
+}
+
 /* "Font Size" combo width */
 .cke_combo__fontsize .cke_combo_text {
     width: 30px;
