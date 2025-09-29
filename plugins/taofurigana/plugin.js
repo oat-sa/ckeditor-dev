@@ -31,7 +31,15 @@ CKEDITOR.plugins.add('taofurigana', {
 		 * @returns {boolean}
 		 */
 		function isSelectionEmpty(selection) {
-			return selection && selection.isCollapsed();
+			if (!selection) return true;
+			if (typeof selection.getRanges === 'function') {
+				var ranges = selection.getRanges();
+				return !ranges.length || ranges[0].collapsed;
+			}
+			if ('isCollapsed' in selection) {
+				return !!selection.isCollapsed;
+			}
+			return true;
 		}
 
 		/**
@@ -136,16 +144,22 @@ CKEDITOR.plugins.add('taofurigana', {
 				// remove ruby, put base as text
 				editor.fire('saveSnapshot');
 				editor.fire('lockSnapshot');
-				var rbHtml = new CKEDITOR.dom.element.createFromHtml(rbElement.$[0].innerHTML);
-				rbHtml.replace(rubyElement);
-				if (!byClick) {
-					// select base text, to avoid know issue with delete key https://dev.ckeditor.com/ticket/9998
-					// new text will be wrapped in <span style="font-size: 7px;">...</span>
-					range = new CKEDITOR.dom.range(editor.document);
-					range.selectNodeContents(rbHtml);
-					selection.selectRanges([range]);
+				try {
+					var rbNode = rbElement.count() ? rbElement.getItem(0) : null;
+					var baseText = rbNode ? rbNode.getText() : '';
+					var replacement = new CKEDITOR.dom.text(baseText, editor.document);
+					replacement.replace(rubyElement);
+					if (!byClick) {
+						// keep caret on the base text
+						range = new CKEDITOR.dom.range(editor.document);
+						range.selectNodeContents(replacement);
+						selection.selectRanges([range]);
+					}
+					editor.updateElement();
+					editor.fire('change');
+				} finally {
+					editor.fire('unlockSnapshot');
 				}
-				editor.fire('unlockSnapshot');
 				return true;
 			}
 		}
@@ -212,65 +226,87 @@ CKEDITOR.plugins.add('taofurigana', {
 					rubyElement,
 					rbElement,
 					rtElement,
-					range,
-					zeroWidthSpace,
-					emptyElement;
+					range;
 				if (isInFugirana(startNode)) {
 					rubyElement = startNode.getAscendant('ruby');
 					rbElement = rubyElement.find('rb');
-					rtElement = rubyElement.find('rt');
 					if (deleteRubyIfNoRt(startNode, true)) {
 						refreshCommandState(editor);
-					} else if (rbElement.$.length && rtElement.$.length && startNode.getParent().$ === rtElement.$[0] &&
-						startNode.$.nextSibling === null && curRange.endOffset + 1 >= startNode.$.length) {
-						// if in the end of rt text
-						// move cursor outside ruby element
-						range = new CKEDITOR.dom.range(editor.document);
-						if (!rubyElement.$.nextSibling) {
-							range.moveToClosestEditablePosition(rubyElement, true);
+					} else {
+						editor.fire('saveSnapshot');
+						editor.fire('lockSnapshot');
+
+						try {
+							var baseTextContent = '';
+							var rbNode = rbElement.getItem(0);
+							if (rbNode) {
+								baseTextContent = rbNode.getText();
+							}
+
+							var textNode = new CKEDITOR.dom.text(baseTextContent, editor.document);
+
+							textNode.replace(rubyElement);
+
+							range = new CKEDITOR.dom.range(editor.document);
+							range.setStartAfter(textNode);
+							range.collapse(true);
 							selection.selectRanges([range]);
-							refreshCommandState(editor);
-						} else {
-							emptyElement = new CKEDITOR.dom.text(CKEDITOR.dom.selection.FILLING_CHAR_SEQUENCE);
-							emptyElement.insertAfter(rubyElement);
-							range.moveToElementEditablePosition(emptyElement);
-							selection.selectRanges([range]);
-							refreshCommandState(editor);
+							editor.updateElement();
+							editor.fire('change');
+						} finally {
+							editor.fire('unlockSnapshot');
 						}
+						refreshCommandState(editor);
 					}
 				} else if (furiganaCanBeCreated(editor)) {
 					editor.fire('saveSnapshot');
 					editor.fire('lockSnapshot');
+					var anchor;
+					try {
+						rubyElement = new CKEDITOR.dom.element('ruby', editor.document);
+						rbElement = new CKEDITOR.dom.element('rb', editor.document);
+						rbElement.append(getSelectionContent(selection));
+						rtElement = new CKEDITOR.dom.element('rt', editor.document);
+						rtElement.appendHtml('&nbsp;');
+						rubyElement.append(rbElement);
+						rubyElement.append(rtElement);
 
-					rubyElement = new CKEDITOR.dom.element('ruby', editor.document);
-					rbElement = new CKEDITOR.dom.element('rb', editor.document);
-					rbElement.append(getSelectionContent(selection));
-					rtElement = new CKEDITOR.dom.element('rt', editor.document);
-					rtElement.appendHtml('&nbsp;');
-					rubyElement.append(rbElement);
-					rubyElement.append(rtElement);
+						// create a temporary element for binding the cursor
+						anchor = new CKEDITOR.dom.element('span', editor.document);
+						rtElement.append(anchor);
+						rtElement.appendHtml('&nbsp;');
 
-					// create a temporary element for binding the cursor
-					var anchor = new CKEDITOR.dom.element('span', editor.document);
-					rtElement.append(anchor);
-					rtElement.appendHtml('&nbsp;');
+						editor.insertElement(rubyElement);
+						// add a zero-width space for the better navigation in Chrome (version >= 128) to the next sibling
+						var nextSibling = rubyElement.getNext();
+						var isText = nextSibling && nextSibling.type === CKEDITOR.NODE_TEXT;
+						if (!nextSibling) {
+							new CKEDITOR.dom.text('\u200b', editor.document).insertAfter(rubyElement);
+						} else if (isText) {
+							var text = nextSibling.getText();
+							var cleaned = text.replace(/\u200B/g, '').replace(/\u00A0/g, ' ').trim();
+							if (cleaned === '') {
+								if (text !== '\u200b') {
+									nextSibling.setText('\u200b');
+								}
+							}
+						}
 
-					editor.insertElement(rubyElement);
-					// add a zero-width space for the better navigation in Chrome (version >= 128) to the next sibling
-					zeroWidthSpace = new CKEDITOR.dom.text('\u200b', editor.document);
-					rubyElement.append(zeroWidthSpace);
-
-					// move cursor inside the anchor
-					range = new CKEDITOR.dom.range(editor.document);
-					range.setStart(anchor, 0);
-					range.collapse(true);
-					editor.getSelection().removeAllRanges();
-					editor.getSelection().selectRanges([range]);
-					refreshCommandState(editor);
-
-					editor.fire('unlockSnapshot');
-					// remove anchor
-					anchor.remove();
+						// move cursor inside the anchor
+						range = new CKEDITOR.dom.range(editor.document);
+						range.setStart(anchor, 0);
+						range.collapse(true);
+						editor.getSelection().removeAllRanges();
+						editor.getSelection().selectRanges([range]);
+						editor.updateElement();
+						editor.fire('change');
+					} finally {
+						editor.fire('unlockSnapshot');
+						if (anchor) {
+							anchor.remove();
+						}
+						refreshCommandState(editor);
+					}
 				}
 			}
 		});
@@ -286,7 +322,7 @@ CKEDITOR.plugins.add('taofurigana', {
 				refreshCommandState(editor);
 			});
 		});
-		editor.on('blur', function() {
+		editor.on('blur', function () {
 			// Get all ruby elements in the editor
 			var rubyElements = editor.document.find('ruby');
 			var modified = false;
@@ -300,12 +336,17 @@ CKEDITOR.plugins.add('taofurigana', {
 					if (rbElement.$.length) {
 						editor.fire('saveSnapshot');
 						editor.fire('lockSnapshot');
-
-						var rbHtml = new CKEDITOR.dom.element.createFromHtml(rbElement.$[0].innerHTML);
-						rbHtml.replace(ruby);
-
-						editor.fire('unlockSnapshot');
-						modified = true;
+						try {
+							var rbNode = rbElement.count() ? rbElement.getItem(0) : null;
+							var baseText = rbNode ? rbNode.getText() : '';
+							var replacement = new CKEDITOR.dom.text(baseText, editor.document);
+							replacement.replace(ruby);
+							editor.updateElement();
+							editor.fire('change');
+							modified = true;
+						} finally {
+							editor.fire('unlockSnapshot');
+						}
 					}
 				}
 			}
