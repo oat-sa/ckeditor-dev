@@ -136,16 +136,22 @@ CKEDITOR.plugins.add('taofurigana', {
 				// remove ruby, put base as text
 				editor.fire('saveSnapshot');
 				editor.fire('lockSnapshot');
-				var rbHtml = new CKEDITOR.dom.element.createFromHtml(rbElement.$[0].innerHTML);
-				rbHtml.replace(rubyElement);
-				if (!byClick) {
-					// select base text, to avoid know issue with delete key https://dev.ckeditor.com/ticket/9998
-					// new text will be wrapped in <span style="font-size: 7px;">...</span>
-					range = new CKEDITOR.dom.range(editor.document);
-					range.selectNodeContents(rbHtml);
-					selection.selectRanges([range]);
+				try {
+					var rbNode = rbElement.count() ? rbElement.getItem(0) : null;
+					var baseText = rbNode ? rbNode.getText() : '';
+					var replacement = new CKEDITOR.dom.text(baseText, editor.document);
+					replacement.replace(rubyElement);
+					if (!byClick) {
+						// keep caret on the base text
+						range = new CKEDITOR.dom.range(editor.document);
+						range.selectNodeContents(replacement);
+						selection.selectRanges([range]);
+					}
+					editor.updateElement();
+					editor.fire('change');
+				} finally {
+					editor.fire('unlockSnapshot');
 				}
-				editor.fire('unlockSnapshot');
 				return true;
 			}
 		}
@@ -212,30 +218,37 @@ CKEDITOR.plugins.add('taofurigana', {
 					rubyElement,
 					rbElement,
 					rtElement,
-					range,
-					zeroWidthSpace,
-					emptyElement;
+					range;
 				if (isInFugirana(startNode)) {
 					rubyElement = startNode.getAscendant('ruby');
 					rbElement = rubyElement.find('rb');
-					rtElement = rubyElement.find('rt');
 					if (deleteRubyIfNoRt(startNode, true)) {
 						refreshCommandState(editor);
-					} else if (rbElement.$.length && rtElement.$.length && startNode.getParent().$ === rtElement.$[0] &&
-						startNode.$.nextSibling === null && curRange.endOffset + 1 >= startNode.$.length) {
-						// if in the end of rt text
-						// move cursor outside ruby element
-						range = new CKEDITOR.dom.range(editor.document);
-						if (!rubyElement.$.nextSibling) {
-							range.moveToClosestEditablePosition(rubyElement, true);
+					} else {
+						editor.fire('saveSnapshot');
+						editor.fire('lockSnapshot');
+
+						try {
+							var baseTextContent = '';
+							var rbNode = rbElement.getItem(0);
+							if (rbNode) {
+								baseTextContent = rbNode.getText();
+							}
+
+							var textNode = new CKEDITOR.dom.text(baseTextContent, editor.document);
+
+							textNode.replace(rubyElement);
+
+							range = new CKEDITOR.dom.range(editor.document);
+							range.setStartAfter(textNode);
+							range.collapse(true);
 							selection.selectRanges([range]);
+
+							editor.updateElement();
+							editor.fire('change');
 							refreshCommandState(editor);
-						} else {
-							emptyElement = new CKEDITOR.dom.text(CKEDITOR.dom.selection.FILLING_CHAR_SEQUENCE);
-							emptyElement.insertAfter(rubyElement);
-							range.moveToElementEditablePosition(emptyElement);
-							selection.selectRanges([range]);
-							refreshCommandState(editor);
+						} finally {
+							editor.fire('unlockSnapshot');
 						}
 					}
 				} else if (furiganaCanBeCreated(editor)) {
@@ -257,8 +270,11 @@ CKEDITOR.plugins.add('taofurigana', {
 
 					editor.insertElement(rubyElement);
 					// add a zero-width space for the better navigation in Chrome (version >= 128) to the next sibling
-					zeroWidthSpace = new CKEDITOR.dom.text('\u200b', editor.document);
-					rubyElement.append(zeroWidthSpace);
+					var nextSibling = rubyElement.getNext();
+					if (!nextSibling || (nextSibling.type === CKEDITOR.NODE_TEXT && nextSibling.getText().trim() === '')) {
+						var zeroWidthSpace = new CKEDITOR.dom.text('\u200b', editor.document);
+						zeroWidthSpace.insertAfter(rubyElement);
+					}
 
 					// move cursor inside the anchor
 					range = new CKEDITOR.dom.range(editor.document);
