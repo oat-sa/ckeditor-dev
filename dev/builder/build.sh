@@ -57,7 +57,7 @@ echo "Starting CKBuilder..."
 
 JAVA_ARGS=${ARGS// -t / } # Remove -t from args.
 
-VERSION="4.14.1 TAO-3.1"
+VERSION="4.14.1 TAO-3.2"
 REVISION=$(git rev-parse --verify --short HEAD)
 
 # If the current revision is not tagged with any CKE version, it means it's a "dirty" build. We
@@ -69,8 +69,10 @@ if [ ${#TAG} -le 0 ];
 then
 	VERSION="$VERSION DEV"
 fi
-
+# For release build with minified code
 java -jar ckbuilder/$CKBUILDER_VERSION/ckbuilder.jar --build ../../ release $JAVA_ARGS --version="$VERSION" --revision="$REVISION" --overwrite
+# For developing not minified code uncomment this line below
+#java -jar ckbuilder/$CKBUILDER_VERSION/ckbuilder.jar --build ../../ release $JAVA_ARGS --version="$VERSION" --revision="$REVISION" --overwrite --leave-js-unminified --leave-css-unminified
 
 # Copy and build tests.
 if [[ "$ARGS" == *\ \-t\ * ]]; then
