@@ -1,11 +1,14 @@
-
+/*
+Copyright (c) 2025 CKSource 
+For licensing, see LICENSE.md or https://ckeditor.com/legal/ckeditor-oss-license
+*/
 CKEDITOR.plugins.add("taostrike", {
   lang: "en",
   icons: "strike",
   hidpi: true,
 
   init: function (editor) {
-    var commandName = "spanStrike",
+    const commandName = "spanStrike",
       style = new CKEDITOR.style({
         element: "span",
         attributes: { class: "txt-strike" },

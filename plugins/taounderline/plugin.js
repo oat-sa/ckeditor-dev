@@ -1,25 +1,28 @@
-/* global CKEDITOR */
+/*
+Copyright (c) 2025 CKSource 
+For licensing, see LICENSE.md or https://ckeditor.com/legal/ckeditor-oss-license
+*/
 CKEDITOR.plugins.add("taounderline", {
 	lang: "de,en,fr,nl",
 	requires: "menubutton",
 
 	init: function (editor) {
 		// Styles
-		var underlineStyle = new CKEDITOR.style({
+		const underlineStyle = new CKEDITOR.style({
 			element: "span",
 			attributes: { class: "txt-underline" },
 		});
-		var dashedStyle = new CKEDITOR.style({
+		const dashedStyle = new CKEDITOR.style({
 			element: "span",
 			attributes: { class: "txt-dashed" },
 		});
-		var wavyStyle = new CKEDITOR.style({
+		const wavyStyle = new CKEDITOR.style({
 			element: "span",
 			attributes: { class: "txt-wavy" },
 		});
 
 		// Content forms
-		var underlineForms = [
+		const underlineForms = [
 			"u",
 			[
 				"span",
@@ -30,7 +33,7 @@ CKEDITOR.plugins.add("taounderline", {
 		];
 		underlineForms.unshift(underlineStyle);
 
-		var dashedForms = [
+		const dashedForms = [
 			[
 				"span",
 				function (el) {
@@ -40,7 +43,7 @@ CKEDITOR.plugins.add("taounderline", {
 		];
 		dashedForms.unshift(dashedStyle);
 
-		var wavyForms = [
+		const wavyForms = [
 			[
 				"span",
 				function (el) {
@@ -69,16 +72,13 @@ CKEDITOR.plugins.add("taounderline", {
 		);
 
 		function toggleStyle(styleToToggle) {
-			var path = editor.elementPath();
-
 			// remove all styles first
 			[underlineStyle, dashedStyle, wavyStyle].forEach(function (s) {
 				if (s !== styleToToggle) editor.removeStyle(s);
 			});
 
 			// toggle style
-			var isActive = styleToToggle.checkActive(path, editor);
-			if (isActive) {
+			if (styleToToggle.checkActive(editor.elementPath(), editor)) {
 				editor.removeStyle(styleToToggle);
 			} else {
 				editor.applyStyle(styleToToggle);
@@ -87,12 +87,12 @@ CKEDITOR.plugins.add("taounderline", {
 
 		function updateButtonState() {
 			if (editor.readOnly) return;
-			var path = editor.elementPath();
-			var anyActive =
+			const path = editor.elementPath();
+			const anyActive =
 				underlineStyle.checkActive(path, editor) ||
 				dashedStyle.checkActive(path, editor) ||
 				wavyStyle.checkActive(path, editor);
-			var btn = editor.ui.get("TaoUnderline");
+			const btn = editor.ui.get("TaoUnderline");
 			if (btn)
 				btn.setState(
 					anyActive ? CKEDITOR.TRISTATE_ON : CKEDITOR.TRISTATE_OFF
@@ -104,7 +104,7 @@ CKEDITOR.plugins.add("taounderline", {
 		editor.attachStyleStateChange(wavyStyle, updateButtonState);
 
 		// Keep selection across menu click
-		var savedBookmarks = null;
+		let savedBookmarks = null;
 		function restoreSelectionIfSaved() {
 			if (savedBookmarks) {
 				editor.focus();
@@ -114,9 +114,9 @@ CKEDITOR.plugins.add("taounderline", {
 		}
 
 		// Menu items
-		var items = {
+		const items = {
 			taounderline_underline: {
-				label: "Solid",
+				label: editor.lang.spanUnderline.menu.solid,
 				group: "taounderline",
 				order: 1,
 				role: "menuitemcheckbox",
@@ -127,7 +127,7 @@ CKEDITOR.plugins.add("taounderline", {
 				style: underlineStyle,
 			},
 			taounderline_dashed: {
-				label: "Dashed",
+				label: editor.lang.spanUnderline.menu.dashed,
 				group: "taounderline",
 				order: 2,
 				role: "menuitemcheckbox",
@@ -138,7 +138,7 @@ CKEDITOR.plugins.add("taounderline", {
 				style: dashedStyle,
 			},
 			taounderline_wavy: {
-				label: "Wavy",
+				label: editor.lang.spanUnderline.menu.wavy,
 				group: "taounderline",
 				order: 3,
 				role: "menuitemcheckbox",
@@ -150,12 +150,13 @@ CKEDITOR.plugins.add("taounderline", {
 			},
 		};
 
+
 		editor.addMenuGroup("taounderline", 1);
 		editor.addMenuItems(items);
 
 		// Menubutton
 		editor.ui.add("TaoUnderline", CKEDITOR.UI_MENUBUTTON, {
-			label: "Underline",
+			label: editor.lang[commandName].button,
 			toolbar: "basicstyles,20",
 			icon: this.path + "images/taounderline.png",
 			command: "spanUnderline",
@@ -166,14 +167,14 @@ CKEDITOR.plugins.add("taounderline", {
 					document.body.classList.add("cke_panel_visible");
 				}
 				// save selection
-				var sel = editor.getSelection();
+				const sel = editor.getSelection();
 				if (sel) savedBookmarks = sel.createBookmarks(true);
 
 				// reflect active state per item
-				var path = editor.elementPath();
-				var underlineActive = underlineStyle.checkActive(path, editor);
-				var dashedActive = dashedStyle.checkActive(path, editor);
-				var wavyActive = wavyStyle.checkActive(path, editor);
+				const path = editor.elementPath();
+				const underlineActive = underlineStyle.checkActive(path, editor);
+				const dashedActive = dashedStyle.checkActive(path, editor);
+				const wavyActive = wavyStyle.checkActive(path, editor);
 
 				return {
 					taounderline_underline: underlineActive
