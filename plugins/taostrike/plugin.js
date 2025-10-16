@@ -22,7 +22,7 @@ CKEDITOR.plugins.add("taostrike", {
           },
         ],
       ];
-// Put the style as the most important form.
+
     forms.unshift(style);
 
     editor.attachStyleStateChange(style, function (state) {

@@ -70,7 +70,7 @@ then
 	VERSION="$VERSION DEV"
 fi
 
-java -jar ckbuilder/$CKBUILDER_VERSION/ckbuilder.jar --build ../../ release $JAVA_ARGS --version="$VERSION" --revision="$REVISION" --overwrite --leave-js-unminified --leave-css-unminified
+java -jar ckbuilder/$CKBUILDER_VERSION/ckbuilder.jar --build ../../ release $JAVA_ARGS --version="$VERSION" --revision="$REVISION" --overwrite
 
 # Copy and build tests.
 if [[ "$ARGS" == *\ \-t\ * ]]; then
