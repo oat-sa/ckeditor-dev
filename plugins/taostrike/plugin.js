@@ -8,10 +8,10 @@ CKEDITOR.plugins.add("taostrike", {
   hidpi: true,
 
   init: function (editor) {
-    const commandName = "spanStrike",
+    var commandName = "spanStrike",
       style = new CKEDITOR.style({
         element: "span",
-        attributes: { class: "txt-strike" },
+        attributes: { "class": "txt-strike" }
       }),
       forms = [
         "strike",
@@ -19,8 +19,8 @@ CKEDITOR.plugins.add("taostrike", {
           "span",
           function (el) {
             return el.styles["text-decoration"] === 'line-through';
-          },
-        ],
+          }
+        ]
       ];
 
     forms.unshift(style);
@@ -32,7 +32,7 @@ CKEDITOR.plugins.add("taostrike", {
     editor.addCommand(
       commandName,
       new CKEDITOR.styleCommand(style, {
-        contentForms: forms,
+        contentForms: forms
       })
     );
 
@@ -40,7 +40,7 @@ CKEDITOR.plugins.add("taostrike", {
       label: editor.lang[commandName].button,
       command: commandName,
       icon: "strike",
-      toolbar: "basicstyles,21",
+      toolbar: "basicstyles,21"
     });
-  },
+  }
 });

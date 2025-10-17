@@ -8,48 +8,48 @@ CKEDITOR.plugins.add("taounderline", {
 
 	init: function (editor) {
 		// Styles
-		const underlineStyle = new CKEDITOR.style({
+		var underlineStyle = new CKEDITOR.style({
 			element: "span",
-			attributes: { class: "txt-underline" },
+			attributes: { "class": "txt-underline" }
 		});
-		const dashedStyle = new CKEDITOR.style({
+		var dashedStyle = new CKEDITOR.style({
 			element: "span",
-			attributes: { class: "txt-dashed" },
+			attributes: { "class": "txt-dashed" }
 		});
-		const wavyStyle = new CKEDITOR.style({
+		var wavyStyle = new CKEDITOR.style({
 			element: "span",
-			attributes: { class: "txt-wavy" },
+			attributes: { "class": "txt-wavy" }
 		});
 
 		// Content forms
-		const underlineForms = [
+		var underlineForms = [
 			"u",
 			[
 				"span",
 				function (el) {
 					return el.styles["text-decoration"] === "underline";
-				},
-			],
+				}
+			]
 		];
 		underlineForms.unshift(underlineStyle);
 
-		const dashedForms = [
+		var dashedForms = [
 			[
 				"span",
 				function (el) {
 					return el.styles["text-decoration"] === "dashed";
-				},
-			],
+				}
+			]
 		];
 		dashedForms.unshift(dashedStyle);
 
-		const wavyForms = [
+		var wavyForms = [
 			[
 				"span",
 				function (el) {
 					return el.styles["text-decoration"] === "wavy";
-				},
-			],
+				}
+			]
 		];
 		wavyForms.unshift(wavyStyle);
 
@@ -57,13 +57,13 @@ CKEDITOR.plugins.add("taounderline", {
 		editor.addCommand(
 			"spanUnderline",
 			new CKEDITOR.styleCommand(underlineStyle, {
-				contentForms: underlineForms,
+				contentForms: underlineForms
 			})
 		);
 		editor.addCommand(
 			"spanDashed",
 			new CKEDITOR.styleCommand(dashedStyle, {
-				contentForms: dashedForms,
+				contentForms: dashedForms
 			})
 		);
 		editor.addCommand(
@@ -87,12 +87,12 @@ CKEDITOR.plugins.add("taounderline", {
 
 		function updateButtonState() {
 			if (editor.readOnly) return;
-			const path = editor.elementPath();
-			const anyActive =
+			var path = editor.elementPath();
+			var anyActive =
 				underlineStyle.checkActive(path, editor) ||
 				dashedStyle.checkActive(path, editor) ||
 				wavyStyle.checkActive(path, editor);
-			const btn = editor.ui.get("TaoUnderline");
+			var btn = editor.ui.get("TaoUnderline");
 			if (btn)
 				btn.setState(
 					anyActive ? CKEDITOR.TRISTATE_ON : CKEDITOR.TRISTATE_OFF
@@ -104,7 +104,7 @@ CKEDITOR.plugins.add("taounderline", {
 		editor.attachStyleStateChange(wavyStyle, updateButtonState);
 
 		// Keep selection across menu click
-		let savedBookmarks = null;
+		var savedBookmarks = null;
 		function restoreSelectionIfSaved() {
 			if (savedBookmarks) {
 				editor.focus();
@@ -114,7 +114,7 @@ CKEDITOR.plugins.add("taounderline", {
 		}
 
 		// Menu items
-		const items = {
+		var items = {
 			taounderline_underline: {
 				label: editor.lang.spanUnderline.menu.solid,
 				group: "taounderline",
@@ -124,7 +124,7 @@ CKEDITOR.plugins.add("taounderline", {
 					restoreSelectionIfSaved();
 					toggleStyle(underlineStyle);
 				},
-				style: underlineStyle,
+				style: underlineStyle
 			},
 			taounderline_dashed: {
 				label: editor.lang.spanUnderline.menu.dashed,
@@ -135,7 +135,7 @@ CKEDITOR.plugins.add("taounderline", {
 					restoreSelectionIfSaved();
 					toggleStyle(dashedStyle);
 				},
-				style: dashedStyle,
+				style: dashedStyle
 			},
 			taounderline_wavy: {
 				label: editor.lang.spanUnderline.menu.wavy,
@@ -146,8 +146,8 @@ CKEDITOR.plugins.add("taounderline", {
 					restoreSelectionIfSaved();
 					toggleStyle(wavyStyle);
 				},
-				style: wavyStyle,
-			},
+				style: wavyStyle
+			}
 		};
 
 
@@ -156,7 +156,7 @@ CKEDITOR.plugins.add("taounderline", {
 
 		// Menubutton
 		editor.ui.add("TaoUnderline", CKEDITOR.UI_MENUBUTTON, {
-			label: editor.lang[commandName].button,
+			label: editor.lang.spanUnderline.button,
 			toolbar: "basicstyles,20",
 			icon: this.path + "images/taounderline.png",
 			command: "spanUnderline",
@@ -167,14 +167,14 @@ CKEDITOR.plugins.add("taounderline", {
 					document.body.classList.add("cke_panel_visible");
 				}
 				// save selection
-				const sel = editor.getSelection();
+				var sel = editor.getSelection();
 				if (sel) savedBookmarks = sel.createBookmarks(true);
 
 				// reflect active state per item
-				const path = editor.elementPath();
-				const underlineActive = underlineStyle.checkActive(path, editor);
-				const dashedActive = dashedStyle.checkActive(path, editor);
-				const wavyActive = wavyStyle.checkActive(path, editor);
+				var path = editor.elementPath();
+				var underlineActive = underlineStyle.checkActive(path, editor);
+				var dashedActive = dashedStyle.checkActive(path, editor);
+				var wavyActive = wavyStyle.checkActive(path, editor);
 
 				return {
 					taounderline_underline: underlineActive
@@ -185,9 +185,9 @@ CKEDITOR.plugins.add("taounderline", {
 						: CKEDITOR.TRISTATE_OFF,
 					taounderline_wavy: wavyActive
 						? CKEDITOR.TRISTATE_ON
-						: CKEDITOR.TRISTATE_OFF,
+						: CKEDITOR.TRISTATE_OFF
 				};
-			},
+			}
 		});
-	},
+	}
 });
