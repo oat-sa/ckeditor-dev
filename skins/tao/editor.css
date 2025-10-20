@@ -1896,18 +1896,6 @@ legend.cke_voice_label {
 .txt-wavy {
     text-decoration: underline wavy;
 }
-
-.txt-strike {
-    text-decoration: line-through;
-}
-
-.txt-dashed {
-    text-decoration: underline dashed;
-}
-.txt-wavy {
-    text-decoration: underline wavy;
-}
-
 .txt-highlight {
     padding: 0 5px;
     background: #FF6416;
