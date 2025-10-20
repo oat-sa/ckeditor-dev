@@ -4,16 +4,16 @@ CKEDITOR.plugins.add("taostrike", {
 		var commandName = "spanStrike",
 			style = new CKEDITOR.style({
 				element: "span",
-				attributes: { class: "txt-strike" },
+				attributes: { "class": "txt-strike" }
 			}),
 			forms = [
 				"u",
 				[
 					"span",
 					function (el) {
-						return el.styles["text-decoration"] == "strike";
-					},
-				],
+						return el.styles["text-decoration"] == "line-though";
+					}
+				]
 			];
 
 		// Put the style as the most important form.
@@ -28,14 +28,15 @@ CKEDITOR.plugins.add("taostrike", {
 		editor.addCommand(
 			commandName,
 			new CKEDITOR.styleCommand(style, {
-				contentForms: forms,
+				contentForms: forms
 			})
 		);
 
 		editor.ui.addButton("TaoStrike", {
 			label: editor.lang[commandName].button,
 			command: commandName,
-			icon: this.path + "images/taostrike.png",
+			icon: "strike",
+			toolbar: 'basicstyles,21'
 		});
-	},
+	}
 });
