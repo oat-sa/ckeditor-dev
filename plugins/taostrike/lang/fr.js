@@ -1,4 +1,3 @@
-CKEDITOR.plugins.setLang("spanStrike", "fr", {
-	button: "Barré",
-	title: "Barré"
-});
+CKEDITOR.plugins.setLang( 'spanStrike', 'fr', {
+	button: 'Barré'
+} );

@@ -2,32 +2,32 @@
 Copyright (c) 2025 CKSource 
 For licensing, see LICENSE.md or https://ckeditor.com/legal/ckeditor-oss-license
 */
-CKEDITOR.plugins.add("taounderline", {
-	lang: "de,en,fr,nl",
-	requires: "menubutton",
+CKEDITOR.plugins.add('taounderline', {
+	lang: 'de,en,fr,nl', // %REMOVE_LINE_CORE%
+	requires: 'menubutton',
 
 	init: function (editor) {
 		// Styles
 		var underlineStyle = new CKEDITOR.style({
-			element: "span",
-			attributes: { "class": "txt-underline" }
+			element: 'span',
+			attributes: { 'class': 'txt-underline' }
 		});
 		var dashedStyle = new CKEDITOR.style({
-			element: "span",
-			attributes: { "class": "txt-dashed" }
+			element: 'span',
+			attributes: { 'class': 'txt-dashed' }
 		});
 		var wavyStyle = new CKEDITOR.style({
-			element: "span",
-			attributes: { "class": "txt-wavy" }
+			element: 'span',
+			attributes: { 'class': 'txt-wavy' }
 		});
 
 		// Content forms
 		var underlineForms = [
-			"u",
+			'u',
 			[
-				"span",
+				'span',
 				function (el) {
-					return el.styles["text-decoration"] === "underline";
+					return el.styles['text-decoration'] == 'underline';
 				}
 			]
 		];
@@ -35,9 +35,9 @@ CKEDITOR.plugins.add("taounderline", {
 
 		var dashedForms = [
 			[
-				"span",
+				'span',
 				function (el) {
-					return el.styles["text-decoration"] === "dashed";
+					return el.styles['text-decoration'] == 'underline dashed';
 				}
 			]
 		];
@@ -45,9 +45,9 @@ CKEDITOR.plugins.add("taounderline", {
 
 		var wavyForms = [
 			[
-				"span",
+				'span',
 				function (el) {
-					return el.styles["text-decoration"] === "wavy";
+					return el.styles['text-decoration'] == 'underline wavy';
 				}
 			]
 		];
@@ -55,19 +55,19 @@ CKEDITOR.plugins.add("taounderline", {
 
 		// Commands
 		editor.addCommand(
-			"spanUnderline",
+			'spanUnderline',
 			new CKEDITOR.styleCommand(underlineStyle, {
 				contentForms: underlineForms
 			})
 		);
 		editor.addCommand(
-			"spanDashed",
+			'spanDashed',
 			new CKEDITOR.styleCommand(dashedStyle, {
 				contentForms: dashedForms
 			})
 		);
 		editor.addCommand(
-			"spanWavy",
+			'spanWavy',
 			new CKEDITOR.styleCommand(wavyStyle, { contentForms: wavyForms })
 		);
 
@@ -92,7 +92,7 @@ CKEDITOR.plugins.add("taounderline", {
 				underlineStyle.checkActive(path, editor) ||
 				dashedStyle.checkActive(path, editor) ||
 				wavyStyle.checkActive(path, editor);
-			var btn = editor.ui.get("TaoUnderline");
+			var btn = editor.ui.get('TaoUnderline');
 			if (btn)
 				btn.setState(
 					anyActive ? CKEDITOR.TRISTATE_ON : CKEDITOR.TRISTATE_OFF
@@ -117,9 +117,9 @@ CKEDITOR.plugins.add("taounderline", {
 		var items = {
 			taounderline_underline: {
 				label: editor.lang.spanUnderline.menu.solid,
-				group: "taounderline",
+				group: 'taounderline',
 				order: 1,
-				role: "menuitemcheckbox",
+				role: 'menuitemcheckbox',
 				onClick: function () {
 					restoreSelectionIfSaved();
 					toggleStyle(underlineStyle);
@@ -128,9 +128,9 @@ CKEDITOR.plugins.add("taounderline", {
 			},
 			taounderline_dashed: {
 				label: editor.lang.spanUnderline.menu.dashed,
-				group: "taounderline",
+				group: 'taounderline',
 				order: 2,
-				role: "menuitemcheckbox",
+				role: 'menuitemcheckbox',
 				onClick: function () {
 					restoreSelectionIfSaved();
 					toggleStyle(dashedStyle);
@@ -139,9 +139,9 @@ CKEDITOR.plugins.add("taounderline", {
 			},
 			taounderline_wavy: {
 				label: editor.lang.spanUnderline.menu.wavy,
-				group: "taounderline",
+				group: 'taounderline',
 				order: 3,
-				role: "menuitemcheckbox",
+				role: 'menuitemcheckbox',
 				onClick: function () {
 					restoreSelectionIfSaved();
 					toggleStyle(wavyStyle);
@@ -151,20 +151,20 @@ CKEDITOR.plugins.add("taounderline", {
 		};
 
 
-		editor.addMenuGroup("taounderline", 1);
+		editor.addMenuGroup('taounderline', 1);
 		editor.addMenuItems(items);
 
 		// Menubutton
-		editor.ui.add("TaoUnderline", CKEDITOR.UI_MENUBUTTON, {
+		editor.ui.add('TaoUnderline', CKEDITOR.UI_MENUBUTTON, {
 			label: editor.lang.spanUnderline.button,
-			toolbar: "basicstyles,20",
-			icon: this.path + "images/taounderline.png",
-			command: "spanUnderline",
+			toolbar: 'basicstyles,20',
+			icon: this.path + 'images/taounderline.png',
+			command: 'spanUnderline',
 
 			onMenu: function () {
 				// visibility workaround
 				if (document && document.body) {
-					document.body.classList.add("cke_panel_visible");
+					document.body.classList.add('cke_panel_visible');
 				}
 				// save selection
 				var sel = editor.getSelection();
