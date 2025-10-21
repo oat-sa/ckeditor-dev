@@ -1,3 +1,3 @@
-CKEDITOR.plugins.setLang('spanStrike', 'de', {
+CKEDITOR.plugins.setLang('taoStrike', 'de', {
 	button: 'Durchgestrichen'
 });

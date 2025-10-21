@@ -1,3 +1,3 @@
-CKEDITOR.plugins.setLang('spanStrike', 'nl', {
+CKEDITOR.plugins.setLang('taoStrike', 'nl', {
 	button: 'Doorhalen'
 });

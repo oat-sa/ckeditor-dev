@@ -1,13 +1,13 @@
 CKEDITOR.plugins.add('taostrike', {
 	lang: 'de,en,fr,nl', // %REMOVE_LINE_CORE%
 	init: function (editor) {
-		var commandName = 'spanStrike',
+		var commandName = 'taoStrike',
 			style = new CKEDITOR.style({
 				element: 'span',
 				attributes: { 'class': 'txt-strike' }
 			}),
 			forms = [
-				'u',
+				's',
 				[
 					'span',
 					function (el) {

@@ -1,3 +1,3 @@
-CKEDITOR.plugins.setLang('spanStrike', 'en', {
+CKEDITOR.plugins.setLang('taoStrike', 'en', {
 	button: 'Strike'
 });
