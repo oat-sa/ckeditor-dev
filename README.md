@@ -43,10 +43,7 @@ The built versions checksums aren't identical because the source code contains t
 ### Development for TAO
 
 #### CK Playground
-- To use the uncompiled version of CK for development purposes, please revert the hack in the file `core/scriptloader`:
-    - `git checkout f8daebc8e69c4ee216455f9b20134890aab3e4b8 -- core/scriptloader.js `
-- Set it back before rebuilding.
-    - `git checkout develop -- core/scriptloader.js`
+- To use the uncompiled version of CK for development purposes, please use `--unminified` flag: `./build.sh --unminified `
 
 #### TAO Skin
 - If you need to modify TAO skin, you'll find the SASS source files in [`@oat-sa/tao-core-ui-fe`](https://github.com/oat-sa/tao-core-ui-fe/tree/master/scss/ckeditor/skins/tao/scss). They are not in this repo.
