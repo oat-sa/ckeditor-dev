@@ -104,10 +104,41 @@ CKEDITOR.plugins.add('taounderline', {
 
 		// Keep selection across menu click
 		var savedBookmarks = null;
+
+		function saveSelectionIfPossible() {
+			var sel = editor.getSelection();
+			if (!sel) return;
+
+			var ranges = sel.getRanges();
+			if (!ranges.length) return;
+
+			var range = ranges[0];
+			range.shrink(CKEDITOR.SHRINK_TEXT);
+			range.trim();
+			sel.selectRanges([range]);
+
+			savedBookmarks = sel.createBookmarks();
+		}
+
 		function restoreSelectionIfSaved() {
-			if (savedBookmarks) {
+			if (!savedBookmarks) return;
+
+			try {
 				editor.focus();
-				editor.getSelection().selectBookmarks(savedBookmarks);
+				var sel = editor.getSelection();
+				sel && sel.selectBookmarks(savedBookmarks);
+			} catch (e) {
+				var curSel = editor.getSelection();
+				if (curSel) {
+					var rs = curSel.getRanges();
+					if (rs.length) {
+						var r = rs[0];
+						r.shrink(CKEDITOR.SHRINK_TEXT);
+						r.trim();
+						curSel.selectRanges([r]);
+					}
+				}
+			} finally {
 				savedBookmarks = null;
 			}
 		}
@@ -164,8 +195,7 @@ CKEDITOR.plugins.add('taounderline', {
 					document.body.classList.add('cke_panel_visible');
 				}
 				// save selection
-				var sel = editor.getSelection();
-				if (sel) savedBookmarks = sel.createBookmarks(true);
+				saveSelectionIfPossible();
 
 				// reflect active state per item
 				var path = editor.elementPath();
