@@ -7,4 +7,4 @@ CKEDITOR.plugins.setLang( 'spanUnderline', 'nl', {
 		dashed: 'Gestreept',
 		wavy: 'Golvend'
 	}
-} );
+});

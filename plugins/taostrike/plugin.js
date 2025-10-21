@@ -1,17 +1,17 @@
-CKEDITOR.plugins.add("taostrike", {
-	lang: "en", // %REMOVE_LINE_CORE%
+CKEDITOR.plugins.add('taostrike', {
+	lang: 'de,en,fr,nl', // %REMOVE_LINE_CORE%
 	init: function (editor) {
-		var commandName = "spanStrike",
+		var commandName = 'spanStrike',
 			style = new CKEDITOR.style({
-				element: "span",
-				attributes: { "class": "txt-strike" }
+				element: 'span',
+				attributes: { 'class': 'txt-strike' }
 			}),
 			forms = [
-				"u",
+				'u',
 				[
-					"span",
+					'span',
 					function (el) {
-						return el.styles["text-decoration"] == "line-though";
+						return el.styles['text-decoration'] === 'line-through';
 					}
 				]
 			];
@@ -19,12 +19,11 @@ CKEDITOR.plugins.add("taostrike", {
 		// Put the style as the most important form.
 		forms.unshift(style);
 
-		// Listen to contextual style activation.
 		editor.attachStyleStateChange(style, function (state) {
 			!editor.readOnly && editor.getCommand(commandName).setState(state);
 		});
 
-		// Create the command that can be used to apply the style.
+		// Apply the style.
 		editor.addCommand(
 			commandName,
 			new CKEDITOR.styleCommand(style, {
@@ -32,10 +31,10 @@ CKEDITOR.plugins.add("taostrike", {
 			})
 		);
 
-		editor.ui.addButton("TaoStrike", {
+		editor.ui.addButton('TaoStrike', {
 			label: editor.lang[commandName].button,
 			command: commandName,
-			icon: "strike",
+			icon: 'strike',
 			toolbar: 'basicstyles,21'
 		});
 	}

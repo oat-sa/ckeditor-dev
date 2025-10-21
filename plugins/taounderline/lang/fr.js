@@ -5,5 +5,5 @@ CKEDITOR.plugins.setLang( 'spanUnderline', 'fr', {
 		solid: 'Plein',
 		dashed: 'Tirets',
 		wavy: 'Ondulé'
-}
-} );
+	}
+});

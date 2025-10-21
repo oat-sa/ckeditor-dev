@@ -6,4 +6,4 @@ CKEDITOR.plugins.setLang( 'spanUnderline', 'de', {
 		dashed: 'Gestrichelt',
 		wavy: 'Wellig'
 	}
-} );
+});
