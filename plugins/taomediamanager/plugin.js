@@ -9,6 +9,8 @@ CKEDITOR.plugins.add('taomediamanager', {
     init: function (editor) {
         // Define an editor command that inserts a taomediamanager.
         // http://docs.cksource.com/ckeditor_api/symbols/CKEDITOR.editor.html#addCommand
+        var savedSelection;
+
         var resourceMgrDefaults = {
             params: {
                 lang: 'en-US',
@@ -17,17 +19,26 @@ CKEDITOR.plugins.add('taomediamanager', {
             pathParam: 'path',
             select: function (e, uris) {
                 var i, l = uris.length;
-                for (i = 0; i < l; i++) {
-                    editor.insertHtml('<img src="' + uris[i] + '"/>')
+
+                editor.focus();
+                if (savedSelection) {
+                    editor.getSelection().selectRanges(savedSelection);
                 }
+
+                for (i = 0; i < l; i++) {
+                    editor.insertHtml('<img src="' + uris[i] + '"/>');
+                }
+
+                savedSelection = null;
             }
         };
 
 
         editor.addCommand('insertMedia', {
             // Define a function that will be fired when the command is executed.
-            // http://docs.cksource.com/ckeditor_api/symbols/CKEDITOR.commandDefinition.html#exec
+            // http://docs.cksource.com/ckeditor_api/symbols/CKEDITOR.editor.html#addCommand
             exec: function (editor) {
+                savedSelection = editor.getSelection().getRanges();
                 // Insert the taomediamanager into the document.
                 // http://docs.cksource.com/ckeditor_api/symbols/CKEDITOR.editor.html#insertHtml
                 $('<div>').resourcemgr(_.defaults(editor.config.resourcemgr, resourceMgrDefaults));

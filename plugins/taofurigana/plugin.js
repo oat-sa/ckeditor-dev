@@ -78,6 +78,10 @@ CKEDITOR.plugins.add('taofurigana', {
 		 * @returns {boolean}
 		 */
 		function isInFugirana(node) {
+			if (!node) {
+				return false;
+			}
+
 			return node.getAscendant('ruby') !== null;
 		}
 

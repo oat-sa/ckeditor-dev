@@ -314,7 +314,9 @@
 				insert( this, mode || 'html', data, range );
 
 				// Make the final range selection.
-				range.select();
+				if ( range ) {
+					range.select();
+				}
 
 				afterInsert( this );
 
