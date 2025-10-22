@@ -108,7 +108,6 @@ var CKBUILDER_CONFIG = {
         taoqtimedia: 1,
         taoqtitable: 1,
         taounderline: 1,
-        taostrike: 1,
         taotooltip: 1,
         taohighlight: 1,
         taoqtiinclude: 1,
