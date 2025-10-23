@@ -180,6 +180,8 @@ CKEDITOR.plugins.add('taofurigana', {
 
 			function setButtonsState(state) {
 				otherButtons.forEach(function (button) {
+					// Refresh not applied properly
+					editor.getCommand(button).setState(!state);
 					editor.getCommand(button).setState(state);
 				});
 				combos.forEach(function (combo) {
