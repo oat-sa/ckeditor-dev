@@ -18,11 +18,21 @@ CKEDITOR.plugins.add('taomediamanager', {
             },
             pathParam: 'path',
             select: function (e, uris) {
-                var i, l = uris.length;
+                var selection = editor.getSelection(),
+                    ranges = selection && selection.getRanges(),
+                    i, l = uris.length;
 
                 editor.focus();
-                if (savedSelection) {
-                    editor.getSelection().selectRanges(savedSelection);
+
+                if ((!ranges || !ranges.length) && savedSelection) {
+                    ranges = savedSelection;
+                }
+
+                if (ranges && ranges.length) {
+                    selection = editor.getSelection();
+                    if (selection) {
+                        selection.selectRanges(ranges);
+                    }
                 }
 
                 for (i = 0; i < l; i++) {
