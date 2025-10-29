@@ -62,7 +62,7 @@ if [[ "$JAVA_ARGS" == *" --unminified "* ]]; then
 	UNMINIFIED=true
 fi
 
-VERSION="4.14.1 TAO-3.2"
+VERSION="4.14.1 TAO-3.3"
 REVISION=$(git rev-parse --verify --short HEAD)
 
 # If the current revision is not tagged with any CKE version, it means it's a "dirty" build. We
