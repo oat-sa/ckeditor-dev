@@ -23,8 +23,12 @@ CKEDITOR.plugins.add('taotooltip', {
 		function tooltipCanBeCreated(editor) {
 			var selection = editor.getSelection();
 			var nativeSelection = selection.getNative();
+			var startContainer = null;
+			if (selection.getRanges()[0]) {
+				startContainer = selection.getRanges()[0].startContainer;
+			}
 
-			return nativeSelection !== null && (canInsert(nativeSelection) || isWrappable(nativeSelection)) && !isInFugirana(selection.getRanges()[0].startContainer);
+			return nativeSelection !== null && (canInsert(nativeSelection) || isWrappable(nativeSelection)) && !isInFugirana(startContainer);
 		}
 
 	    /**
@@ -132,7 +136,11 @@ CKEDITOR.plugins.add('taotooltip', {
 		 * @returns {boolean}
 		 */
 		function isInFugirana(node) {
-			return node.getAscendant('ruby') !== null;
+		if (!node) {
+			return false;
+		}
+
+		return node.getAscendant('ruby') !== null;
 		}
 	    /**
 	     * @param {CKEDITOR.dom.selection} selection
