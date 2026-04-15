@@ -98,7 +98,7 @@ CKEDITOR.plugins.add('taofurigana', {
 				return false;
 			}
 
-			return isInFugirana(node) && node.getAscendant('rt') !== null;
+			return isInFugirana(node) && node.getAscendant('rt', true) !== null;
 		}
 
 		/**
