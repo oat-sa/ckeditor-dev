@@ -55,12 +55,17 @@ cd ../..
 echo ""
 echo "Starting CKBuilder..."
 
-JAVA_ARGS=${ARGS// -t / } # Remove -t from args.
+JAVA_ARGS=("$@")
+FILTERED_JAVA_ARGS=()
 UNMINIFIED=false
-if [[ "$JAVA_ARGS" == *" --unminified "* ]]; then
-	JAVA_ARGS=${JAVA_ARGS// --unminified / }
-	UNMINIFIED=true
-fi
+for arg in "${JAVA_ARGS[@]}"; do
+	case "$arg" in
+		-t) ;;
+		--unminified) UNMINIFIED=true ;;
+		*) FILTERED_JAVA_ARGS+=("$arg") ;;
+	esac
+done
+
 
 VERSION="4.14.1 TAO-3.4"
 REVISION=$(git rev-parse --verify --short HEAD)
@@ -78,10 +83,10 @@ echo ""
 
 if [ "$UNMINIFIED" = true ]; then
 	echo "Building unminified version..."
-	java --add-exports java.desktop/sun.java2d=ALL-UNNAMED -jar ckbuilder/$CKBUILDER_VERSION/ckbuilder.jar --build ../../ release $JAVA_ARGS --version="$VERSION" --revision="$REVISION" --overwrite --leave-js-unminified --leave-css-unminified
+	java --add-exports java.desktop/sun.java2d=ALL-UNNAMED -jar ckbuilder/$CKBUILDER_VERSION/ckbuilder.jar --build ../../ release "${FILTERED_JAVA_ARGS[@]}" --version="$VERSION" --revision="$REVISION" --overwrite --leave-js-unminified --leave-css-unminified
 else
 	echo "Building minified version..."
-	java --add-exports java.desktop/sun.java2d=ALL-UNNAMED -jar ckbuilder/$CKBUILDER_VERSION/ckbuilder.jar --build ../../ release $JAVA_ARGS --version="$VERSION" --revision="$REVISION" --overwrite
+	java --add-exports java.desktop/sun.java2d=ALL-UNNAMED -jar ckbuilder/$CKBUILDER_VERSION/ckbuilder.jar --build ../../ release "${FILTERED_JAVA_ARGS[@]}" --version="$VERSION" --revision="$REVISION" --overwrite
 fi
 
 # Copy and build tests.
