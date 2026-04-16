@@ -62,7 +62,7 @@ if [[ "$JAVA_ARGS" == *" --unminified "* ]]; then
 	UNMINIFIED=true
 fi
 
-VERSION="4.14.1 TAO-3.3"
+VERSION="4.14.1 TAO-3.4"
 REVISION=$(git rev-parse --verify --short HEAD)
 
 # If the current revision is not tagged with any CKE version, it means it's a "dirty" build. We
@@ -75,12 +75,13 @@ then
 	VERSION="$VERSION DEV"
 fi
 echo ""
+
 if [ "$UNMINIFIED" = true ]; then
 	echo "Building unminified version..."
-	java -jar ckbuilder/$CKBUILDER_VERSION/ckbuilder.jar --build ../../ release $JAVA_ARGS --version="$VERSION" --revision="$REVISION" --overwrite --leave-js-unminified --leave-css-unminified
+	java --add-exports java.desktop/sun.java2d=ALL-UNNAMED -jar ckbuilder/$CKBUILDER_VERSION/ckbuilder.jar --build ../../ release $JAVA_ARGS --version="$VERSION" --revision="$REVISION" --overwrite --leave-js-unminified --leave-css-unminified
 else
 	echo "Building minified version..."
-	java -jar ckbuilder/$CKBUILDER_VERSION/ckbuilder.jar --build ../../ release $JAVA_ARGS --version="$VERSION" --revision="$REVISION" --overwrite
+	java --add-exports java.desktop/sun.java2d=ALL-UNNAMED -jar ckbuilder/$CKBUILDER_VERSION/ckbuilder.jar --build ../../ release $JAVA_ARGS --version="$VERSION" --revision="$REVISION" --overwrite
 fi
 
 # Copy and build tests.
