@@ -265,14 +265,12 @@ CKEDITOR.plugins.add('taofurigana', {
 					rbElement = new CKEDITOR.dom.element('rb', editor.document);
 					rbElement.append(getSelectionContent(selection));
 					rtElement = new CKEDITOR.dom.element('rt', editor.document);
-					rtElement.appendHtml('&nbsp;');
 					rubyElement.append(rbElement);
 					rubyElement.append(rtElement);
 
 					// create a temporary element for binding the cursor
 					var anchor = new CKEDITOR.dom.element('span', editor.document);
 					rtElement.append(anchor);
-					rtElement.appendHtml('&nbsp;');
 
 					editor.insertElement(rubyElement);
 					// add a zero-width space for the better navigation in Chrome (version >= 128) to the next sibling
