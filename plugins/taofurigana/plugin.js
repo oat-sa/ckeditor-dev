@@ -315,7 +315,11 @@ CKEDITOR.plugins.add('taofurigana', {
 
 				if (rtElement.$.length) {
 					var rtDom = rtElement.getItem(0).$;
+					var originalInnerHTML = rtDom.innerHTML;
 					rtDom.innerHTML = rtDom.innerHTML.replace(/\u200B/g, '');
+					if (originalInnerHTML !== rtDom.innerHTML) {
+						modified = true;
+					}
 				}
 
 				if (rtElement.$.length && rtElement.$[0].innerText.trim() === '') {
