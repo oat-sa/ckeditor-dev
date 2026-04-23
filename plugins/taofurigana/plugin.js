@@ -268,9 +268,9 @@ CKEDITOR.plugins.add('taofurigana', {
 					rubyElement.append(rbElement);
 					rubyElement.append(rtElement);
 
-					// create a temporary element for binding the cursor
-					var anchor = new CKEDITOR.dom.element('span', editor.document);
-					rtElement.append(anchor);
+					// create a temporary text node for cursor placement without spaces
+					var rtPlaceholder = new CKEDITOR.dom.text('\u200b', editor.document);
+					rtElement.append(rtPlaceholder);
 
 					editor.insertElement(rubyElement);
 					// add a zero-width space for the better navigation in Chrome (version >= 128) to the next sibling
@@ -280,17 +280,15 @@ CKEDITOR.plugins.add('taofurigana', {
 						zeroWidthSpace.insertAfter(rubyElement);
 					}
 
-					// move cursor inside the anchor
+					// move cursor inside rt placeholder text node
 					range = new CKEDITOR.dom.range(editor.document);
-					range.setStart(anchor, 0);
+					range.setStart(rtPlaceholder, 1);
 					range.collapse(true);
 					editor.getSelection().removeAllRanges();
 					editor.getSelection().selectRanges([range]);
 					refreshCommandState(editor);
 
 					editor.fire('unlockSnapshot');
-					// remove anchor
-					anchor.remove();
 				}
 			}
 		});
@@ -314,6 +312,11 @@ CKEDITOR.plugins.add('taofurigana', {
 			for (var i = 0; i < rubyElements.count(); i++) {
 				var ruby = rubyElements.getItem(i);
 				var rtElement = ruby.find('rt');
+
+				if (rtElement.$.length) {
+					var rtDom = rtElement.getItem(0).$;
+					rtDom.innerHTML = rtDom.innerHTML.replace(/\u200B/g, '');
+				}
 
 				if (rtElement.$.length && rtElement.$[0].innerText.trim() === '') {
 					var rbElement = ruby.find('rb');
