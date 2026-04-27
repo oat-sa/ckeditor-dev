@@ -215,6 +215,53 @@ CKEDITOR.plugins.add('taofurigana', {
 			}
 		}
 
+		/**
+		 * Remove zero-width placeholders from rt and unwrap empty ruby nodes.
+		 * @param {CkEditor} editor - ckEditor instance
+		 * @param {Boolean} useSnapshots - Wrap ruby unwrapping with snapshot lock.
+		 * @returns {boolean}
+		 */
+		function cleanupRubyElements(editor, useSnapshots) {
+			var rubyElements = editor.document.find('ruby');
+			var modified = false;
+
+			for (var i = 0; i < rubyElements.count(); i++) {
+				var ruby = rubyElements.getItem(i);
+				var rtElement = ruby.find('rt');
+
+				if (rtElement.$.length) {
+					var rtDom = rtElement.getItem(0).$;
+					var originalInnerHTML = rtDom.innerHTML;
+					rtDom.innerHTML = rtDom.innerHTML.replace(/\u200B/g, '');
+					if (originalInnerHTML !== rtDom.innerHTML) {
+						modified = true;
+					}
+				}
+
+				if (rtElement.$.length && rtElement.$[0].innerText.trim() === '') {
+					var rbElement = ruby.find('rb');
+					if (rbElement.$.length) {
+						if (useSnapshots) {
+							editor.fire('saveSnapshot');
+							editor.fire('lockSnapshot');
+						}
+
+						try {
+							var rbHtml = new CKEDITOR.dom.element.createFromHtml(rbElement.$[0].innerHTML);
+							rbHtml.replace(ruby);
+							modified = true;
+						} finally {
+							if (useSnapshots) {
+								editor.fire('unlockSnapshot');
+							}
+						}
+					}
+				}
+			}
+
+			return modified;
+		}
+
 		// Create the command that can be used to apply the style.
 		editor.addCommand(commandName, {
 			exec: function (editor) {
@@ -304,38 +351,11 @@ CKEDITOR.plugins.add('taofurigana', {
 				refreshCommandState(editor);
 			});
 		});
+		editor.on('beforeGetData', function() {
+			cleanupRubyElements(editor, false);
+		});
 		editor.on('blur', function() {
-			// Get all ruby elements in the editor
-			var rubyElements = editor.document.find('ruby');
-			var modified = false;
-
-			for (var i = 0; i < rubyElements.count(); i++) {
-				var ruby = rubyElements.getItem(i);
-				var rtElement = ruby.find('rt');
-
-				if (rtElement.$.length) {
-					var rtDom = rtElement.getItem(0).$;
-					var originalInnerHTML = rtDom.innerHTML;
-					rtDom.innerHTML = rtDom.innerHTML.replace(/\u200B/g, '');
-					if (originalInnerHTML !== rtDom.innerHTML) {
-						modified = true;
-					}
-				}
-
-				if (rtElement.$.length && rtElement.$[0].innerText.trim() === '') {
-					var rbElement = ruby.find('rb');
-					if (rbElement.$.length) {
-						editor.fire('saveSnapshot');
-						editor.fire('lockSnapshot');
-
-						var rbHtml = new CKEDITOR.dom.element.createFromHtml(rbElement.$[0].innerHTML);
-						rbHtml.replace(ruby);
-
-						editor.fire('unlockSnapshot');
-						modified = true;
-					}
-				}
-			}
+			var modified = cleanupRubyElements(editor, true);
 			//update editor textarea
 			if (modified) {
 				//
