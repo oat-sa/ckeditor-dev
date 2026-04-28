@@ -301,9 +301,9 @@ CKEDITOR.plugins.add('taofurigana', {
 			var command = editor.getCommand(commandName);
 			command.setState(CKEDITOR.TRISTATE_DISABLED);
 
-			editable.attachListener(editable, 'mouseup', function () {
-				refreshCommandState(editor);
-			});
+			editable.attachListener(CKEDITOR.document, 'mouseup', function () {
+                refreshCommandState(editor);
+            });
 			editable.attachListener(editable, 'keyup', function () {
 				refreshCommandState(editor);
 			});
