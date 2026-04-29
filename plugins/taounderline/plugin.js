@@ -3,7 +3,7 @@ Copyright (c) 2025 CKSource
 For licensing, see LICENSE.md or https://ckeditor.com/legal/ckeditor-oss-license
 */
 CKEDITOR.plugins.add('taounderline', {
-	lang: 'de,en,fr,nl', // %REMOVE_LINE_CORE%
+	lang: 'de,en,fr,nl,ja', // %REMOVE_LINE_CORE%
 	requires: 'menubutton',
 
 	init: function (editor) {
