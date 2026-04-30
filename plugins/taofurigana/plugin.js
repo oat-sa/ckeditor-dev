@@ -229,15 +229,6 @@ CKEDITOR.plugins.add('taofurigana', {
 				var ruby = rubyElements.getItem(i);
 				var rtElement = ruby.find('rt');
 
-				if (rtElement.$.length) {
-					var rtDom = rtElement.getItem(0).$;
-					var originalInnerHTML = rtDom.innerHTML;
-					rtDom.innerHTML = rtDom.innerHTML.replace(/\u200B/g, '');
-					if (originalInnerHTML !== rtDom.innerHTML) {
-						modified = true;
-					}
-				}
-
 				if (rtElement.$.length && rtElement.$[0].innerText.trim() === '') {
 					var rbElement = ruby.find('rb');
 					if (rbElement.$.length) {
@@ -320,12 +311,6 @@ CKEDITOR.plugins.add('taofurigana', {
 					rtElement.append(rtPlaceholder);
 
 					editor.insertElement(rubyElement);
-					// add a zero-width space for the better navigation in Chrome (version >= 128) to the next sibling
-					var nextSibling = rubyElement.getNext();
-					if (!nextSibling || (nextSibling.type === CKEDITOR.NODE_TEXT && nextSibling.getText().trim() === '')) {
-						var zeroWidthSpace = new CKEDITOR.dom.text('\u200b', editor.document);
-						zeroWidthSpace.insertAfter(rubyElement);
-					}
 
 					// move cursor inside rt placeholder text node
 					range = new CKEDITOR.dom.range(editor.document);
@@ -351,19 +336,9 @@ CKEDITOR.plugins.add('taofurigana', {
 				refreshCommandState(editor);
 			});
 		});
-		editor.on('beforeGetData', function() {
-			cleanupRubyElements(editor, false);
-		});
-		editor.on('blur', function() {
-			var modified = cleanupRubyElements(editor, true);
-			//update editor textarea
-			if (modified) {
-				//
-				editor.updateElement();
-
-				editor.fire('change');
-
-				refreshCommandState(editor);
+		editor.on('getData', function(event) {
+			if (event.data && typeof event.data.dataValue === 'string') {
+				event.data.dataValue = event.data.dataValue.replace(/\u200B/g, '');
 			}
 		});
 		editor.ui.addButton('TaoFurigana', {
