@@ -4,6 +4,7 @@ CKEDITOR.plugins.add('taofurigana', {
 		'use strict';
 
 		var commandName = 'rubyFurigana';
+		var zeroWidthCharsRegex = /[\u200B\u200C\u200D\uFEFF]/g;
 		var containsTag;
 		var otherButtons = [];
 		var combos = [];
@@ -229,7 +230,13 @@ CKEDITOR.plugins.add('taofurigana', {
 				var ruby = rubyElements.getItem(i);
 				var rtElement = ruby.find('rt');
 
-				if (rtElement.$.length && rtElement.$[0].innerText.trim() === '') {
+				if (rtElement.$.length) {
+					var rtNode = rtElement.getItem(0);
+					var rtText = rtNode.getText().replace(zeroWidthCharsRegex, '');
+					if (rtText.trim() !== '') {
+						continue;
+					}
+
 					var rbElement = ruby.find('rb');
 					if (rbElement.$.length) {
 						if (useSnapshots) {
@@ -336,9 +343,20 @@ CKEDITOR.plugins.add('taofurigana', {
 				refreshCommandState(editor);
 			});
 		});
+		editor.on('beforeGetData', function() {
+			cleanupRubyElements(editor, false);
+		});
+		editor.on('blur', function() {
+			var modified = cleanupRubyElements(editor, true);
+			if (modified) {
+				editor.updateElement();
+				editor.fire('change');
+				refreshCommandState(editor);
+			}
+		});
 		editor.on('getData', function(event) {
 			if (event.data && typeof event.data.dataValue === 'string') {
-				event.data.dataValue = event.data.dataValue.replace(/\u200B/g, '');
+				event.data.dataValue = event.data.dataValue.replace(zeroWidthCharsRegex, '');
 			}
 		});
 		editor.ui.addButton('TaoFurigana', {
