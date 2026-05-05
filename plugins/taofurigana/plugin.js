@@ -4,7 +4,7 @@ CKEDITOR.plugins.add('taofurigana', {
 		'use strict';
 
 		var commandName = 'rubyFurigana';
-		var zeroWidthCharsRegex = /[\u200B\u200C\u200D\uFEFF]/g;
+		var placeholderCharRegex = /\u200B/g;
 		var containsTag;
 		var otherButtons = [];
 		var combos = [];
@@ -232,7 +232,7 @@ CKEDITOR.plugins.add('taofurigana', {
 
 				if (rtElement.$.length) {
 					var rtNode = rtElement.getItem(0);
-					var rtText = rtNode.getText().replace(zeroWidthCharsRegex, '');
+					var rtText = rtNode.getText().replace(placeholderCharRegex, '');
 					if (rtText.trim() !== '') {
 						continue;
 					}
@@ -381,7 +381,7 @@ CKEDITOR.plugins.add('taofurigana', {
 		});
 		editor.on('getData', function(event) {
 			if (event.data && typeof event.data.dataValue === 'string') {
-				event.data.dataValue = event.data.dataValue.replace(zeroWidthCharsRegex, '');
+				event.data.dataValue = event.data.dataValue.replace(placeholderCharRegex, '');
 			}
 		});
 		editor.ui.addButton('TaoFurigana', {
