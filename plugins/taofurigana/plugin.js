@@ -341,6 +341,9 @@ CKEDITOR.plugins.add('taofurigana', {
 					rtElement.append(rtPlaceholder);
 
 					editor.insertElement(rubyElement);
+					// add a zero-width helper after ruby for Chrome caret/navigation behavior
+					var zeroWidthSpace = new CKEDITOR.dom.text('\u200b', editor.document);
+					zeroWidthSpace.insertAfter(rubyElement);
 
 					// move cursor inside rt placeholder text node
 					range = new CKEDITOR.dom.range(editor.document);
