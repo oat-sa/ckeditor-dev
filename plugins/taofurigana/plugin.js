@@ -260,6 +260,29 @@ CKEDITOR.plugins.add('taofurigana', {
 			return modified;
 		}
 
+		/**
+		 * Cleanup empty ruby nodes when current selection is outside ruby.
+		 * @param {CkEditor} editor - ckEditor instance
+		 */
+		function cleanupIfSelectionOutsideRuby(editor) {
+			var selection = editor.getSelection();
+			if (!selection || !selection.getRanges || !selection.getRanges().length) {
+				return;
+			}
+
+			var range = selection.getRanges()[0];
+			var startInRuby = range.startContainer && isInFugirana(range.startContainer);
+			var endInRuby = range.endContainer && isInFugirana(range.endContainer);
+
+			if (!startInRuby && !endInRuby) {
+				var modified = cleanupRubyElements(editor, true);
+				if (modified) {
+					editor.updateElement();
+					editor.fire('change');
+				}
+			}
+		}
+
 		// Create the command that can be used to apply the style.
 		editor.addCommand(commandName, {
 			exec: function (editor) {
@@ -337,9 +360,11 @@ CKEDITOR.plugins.add('taofurigana', {
 			command.setState(CKEDITOR.TRISTATE_DISABLED);
 
 			editable.attachListener(editable, 'mouseup', function () {
+				cleanupIfSelectionOutsideRuby(editor);
 				refreshCommandState(editor);
 			});
 			editable.attachListener(editable, 'keyup', function () {
+				cleanupIfSelectionOutsideRuby(editor);
 				refreshCommandState(editor);
 			});
 		});
