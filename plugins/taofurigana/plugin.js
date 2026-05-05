@@ -4,6 +4,7 @@ CKEDITOR.plugins.add('taofurigana', {
 		'use strict';
 
 		var commandName = 'rubyFurigana';
+		var placeholderCharRegex = /\u200B/g;
 		var containsTag;
 		var otherButtons = [];
 		var combos = [];
@@ -215,6 +216,73 @@ CKEDITOR.plugins.add('taofurigana', {
 			}
 		}
 
+		/**
+		 * Remove placeholder-only ruby nodes and unwrap them to rb content.
+		 * @param {CkEditor} editor - ckEditor instance
+		 * @param {Boolean} useSnapshots - Wrap ruby unwrapping with snapshot lock.
+		 * @returns {boolean}
+		 */
+		function cleanupRubyElements(editor, useSnapshots) {
+			var rubyElements = editor.document.find('ruby');
+			var modified = false;
+
+			for (var i = 0; i < rubyElements.count(); i++) {
+				var ruby = rubyElements.getItem(i);
+				var rtElement = ruby.find('rt');
+
+				if (rtElement.$.length) {
+					var rtNode = rtElement.getItem(0);
+					var rtText = rtNode.getText().replace(placeholderCharRegex, '');
+					if (rtText.trim() !== '') {
+						continue;
+					}
+
+					var rbElement = ruby.find('rb');
+					if (rbElement.$.length) {
+						if (useSnapshots) {
+							editor.fire('saveSnapshot');
+							editor.fire('lockSnapshot');
+						}
+
+						try {
+							var rbHtml = new CKEDITOR.dom.element.createFromHtml(rbElement.$[0].innerHTML);
+							rbHtml.replace(ruby);
+							modified = true;
+						} finally {
+							if (useSnapshots) {
+								editor.fire('unlockSnapshot');
+							}
+						}
+					}
+				}
+			}
+
+			return modified;
+		}
+
+		/**
+		 * Cleanup empty ruby nodes when current selection is outside ruby.
+		 * @param {CkEditor} editor - ckEditor instance
+		 */
+		function cleanupIfSelectionOutsideRuby(editor) {
+			var selection = editor.getSelection();
+			if (!selection || !selection.getRanges || !selection.getRanges().length) {
+				return;
+			}
+
+			var range = selection.getRanges()[0];
+			var startInRuby = range.startContainer && isInFugirana(range.startContainer);
+			var endInRuby = range.endContainer && isInFugirana(range.endContainer);
+
+			if (!startInRuby && !endInRuby) {
+				var modified = cleanupRubyElements(editor, true);
+				if (modified) {
+					editor.updateElement();
+					editor.fire('change');
+				}
+			}
+		}
+
 		// Create the command that can be used to apply the style.
 		editor.addCommand(commandName, {
 			exec: function (editor) {
@@ -265,34 +333,27 @@ CKEDITOR.plugins.add('taofurigana', {
 					rbElement = new CKEDITOR.dom.element('rb', editor.document);
 					rbElement.append(getSelectionContent(selection));
 					rtElement = new CKEDITOR.dom.element('rt', editor.document);
-					rtElement.appendHtml('&nbsp;');
 					rubyElement.append(rbElement);
 					rubyElement.append(rtElement);
 
-					// create a temporary element for binding the cursor
-					var anchor = new CKEDITOR.dom.element('span', editor.document);
-					rtElement.append(anchor);
-					rtElement.appendHtml('&nbsp;');
+					// create a temporary text node for cursor placement without spaces
+					var rtPlaceholder = new CKEDITOR.dom.text('\u200b', editor.document);
+					rtElement.append(rtPlaceholder);
 
 					editor.insertElement(rubyElement);
-					// add a zero-width space for the better navigation in Chrome (version >= 128) to the next sibling
-					var nextSibling = rubyElement.getNext();
-					if (!nextSibling || (nextSibling.type === CKEDITOR.NODE_TEXT && nextSibling.getText().trim() === '')) {
-						var zeroWidthSpace = new CKEDITOR.dom.text('\u200b', editor.document);
-						zeroWidthSpace.insertAfter(rubyElement);
-					}
+					// add a zero-width helper after ruby for Chrome caret/navigation behavior
+					var zeroWidthSpace = new CKEDITOR.dom.text('\u200b', editor.document);
+					zeroWidthSpace.insertAfter(rubyElement);
 
-					// move cursor inside the anchor
+					// move cursor inside rt placeholder text node
 					range = new CKEDITOR.dom.range(editor.document);
-					range.setStart(anchor, 0);
+					range.setStart(rtPlaceholder, 1);
 					range.collapse(true);
 					editor.getSelection().removeAllRanges();
 					editor.getSelection().selectRanges([range]);
 					refreshCommandState(editor);
 
 					editor.fire('unlockSnapshot');
-					// remove anchor
-					anchor.remove();
 				}
 			}
 		});
@@ -302,43 +363,28 @@ CKEDITOR.plugins.add('taofurigana', {
 			command.setState(CKEDITOR.TRISTATE_DISABLED);
 
 			editable.attachListener(editable, 'mouseup', function () {
+				cleanupIfSelectionOutsideRuby(editor);
 				refreshCommandState(editor);
 			});
 			editable.attachListener(editable, 'keyup', function () {
+				cleanupIfSelectionOutsideRuby(editor);
 				refreshCommandState(editor);
 			});
 		});
+		editor.on('beforeGetData', function() {
+			cleanupRubyElements(editor, false);
+		});
 		editor.on('blur', function() {
-			// Get all ruby elements in the editor
-			var rubyElements = editor.document.find('ruby');
-			var modified = false;
-
-			for (var i = 0; i < rubyElements.count(); i++) {
-				var ruby = rubyElements.getItem(i);
-				var rtElement = ruby.find('rt');
-
-				if (rtElement.$.length && rtElement.$[0].innerText.trim() === '') {
-					var rbElement = ruby.find('rb');
-					if (rbElement.$.length) {
-						editor.fire('saveSnapshot');
-						editor.fire('lockSnapshot');
-
-						var rbHtml = new CKEDITOR.dom.element.createFromHtml(rbElement.$[0].innerHTML);
-						rbHtml.replace(ruby);
-
-						editor.fire('unlockSnapshot');
-						modified = true;
-					}
-				}
-			}
-			//update editor textarea
+			var modified = cleanupRubyElements(editor, true);
 			if (modified) {
-				//
 				editor.updateElement();
-
 				editor.fire('change');
-
 				refreshCommandState(editor);
+			}
+		});
+		editor.on('getData', function(event) {
+			if (event.data && typeof event.data.dataValue === 'string') {
+				event.data.dataValue = event.data.dataValue.replace(placeholderCharRegex, '');
 			}
 		});
 		editor.ui.addButton('TaoFurigana', {
