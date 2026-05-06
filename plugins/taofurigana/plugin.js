@@ -590,9 +590,9 @@ CKEDITOR.plugins.add('taofurigana', {
 						nextSiblingPlaceholder.insertAfter(rubyElement);
 					}
 
-					// place the caret before the placeholder so it remains a trailing anchor.
+					// place the caret inside the rt start placeholder.
 					range = new CKEDITOR.dom.range(editor.document);
-					range.setStartBefore(rtAnchors.endAnchor);
+					range.setStart(rtAnchors.startAnchor, 1);
 					range.collapse(true);
 					editor.getSelection().removeAllRanges();
 					editor.getSelection().selectRanges([range]);
