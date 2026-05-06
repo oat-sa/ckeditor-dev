@@ -501,8 +501,18 @@ CKEDITOR.plugins.add('taofurigana', {
 						}
 
 						try {
-							var rbHtml = CKEDITOR.dom.element.createFromHtml(rbElements.getItem(0).$.innerHTML);
-							rbHtml.replace(ruby);
+							var rbItem = rbElements.getItem(0);
+							var rbInnerHtml = rbItem.$.innerHTML;
+							var replacement;
+							try {
+								replacement = CKEDITOR.dom.element.createFromHtml(rbInnerHtml, editor.document);
+							} catch (err) {
+								replacement = null;
+							}
+							if (!replacement || replacement.type === CKEDITOR.NODE_TEXT) {
+								replacement = new CKEDITOR.dom.text(rbItem.getText(), editor.document);
+							}
+							replacement.replace(ruby);
 							modified = true;
 						} finally {
 							if (useSnapshots) {
