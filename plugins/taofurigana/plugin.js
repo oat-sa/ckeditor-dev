@@ -4,6 +4,10 @@ CKEDITOR.plugins.add('taofurigana', {
 		'use strict';
 
 		var commandName = 'rubyFurigana';
+		var zeroWidthSpace = '\u200b';
+		var zeroWidthSpaceRegex = /\u200B/g;
+		var rubyTopContentRegex = /(<rt\b[^>]*>)([\s\S]*?)(<\/rt>)/gi;
+		var isNormalizingSelection = false;
 		var containsTag;
 		var otherButtons = [];
 		var combos = [];
@@ -120,6 +124,301 @@ CKEDITOR.plugins.add('taofurigana', {
 		}
 
 		/**
+		 * @param {CKEDITOR.dom.element} rtElement
+		 * @returns {boolean}
+		 */
+		function isRtEffectivelyEmpty(rtElement) {
+			var textContent = rtElement.$.textContent || '';
+
+			return textContent.replace(zeroWidthSpaceRegex, '').trim() === '';
+		}
+
+		/**
+		 * Valid anchor: a text node whose entire contents are exactly one zero-width space (no mixed text).
+		 * @param {CKEDITOR.dom.node} node
+		 * @returns {boolean}
+		 */
+		function isStandaloneZwsAnchor(node) {
+			return node &&
+				node.type === CKEDITOR.NODE_TEXT &&
+				node.getText() === zeroWidthSpace;
+		}
+
+		/**
+		 * Ensure rt has editable start/end anchors in the live DOM.
+		 * Start and end are always distinct CKEDITOR.dom.text nodes when possible (never one node for both).
+		 * @param {CKEDITOR.dom.element} rtElement
+		 * @returns {{ startAnchor: CKEDITOR.dom.text, endAnchor: CKEDITOR.dom.text }}
+		 */
+		function ensureRtAnchors(rtElement) {
+			var first = rtElement.getFirst();
+			var last = rtElement.getLast();
+			var startAnchor;
+			var endAnchor;
+
+			if (!first) {
+				startAnchor = new CKEDITOR.dom.text(zeroWidthSpace, editor.document);
+				endAnchor = new CKEDITOR.dom.text(zeroWidthSpace, editor.document);
+				rtElement.append(startAnchor);
+				rtElement.append(endAnchor);
+				return {
+					startAnchor: startAnchor,
+					endAnchor: endAnchor
+				};
+			}
+
+			if (first.equals(last)) {
+				if (isStandaloneZwsAnchor(first)) {
+					first.remove();
+					startAnchor = new CKEDITOR.dom.text(zeroWidthSpace, editor.document);
+					endAnchor = new CKEDITOR.dom.text(zeroWidthSpace, editor.document);
+					rtElement.append(startAnchor);
+					rtElement.append(endAnchor);
+				} else {
+					startAnchor = new CKEDITOR.dom.text(zeroWidthSpace, editor.document);
+					endAnchor = new CKEDITOR.dom.text(zeroWidthSpace, editor.document);
+					startAnchor.insertBefore(first);
+					endAnchor.insertAfter(first);
+				}
+				return {
+					startAnchor: startAnchor,
+					endAnchor: endAnchor
+				};
+			}
+
+			if (!isStandaloneZwsAnchor(first)) {
+				startAnchor = new CKEDITOR.dom.text(zeroWidthSpace, editor.document);
+				startAnchor.insertBefore(first);
+			} else {
+				startAnchor = first;
+			}
+
+			last = rtElement.getLast();
+
+			if (!isStandaloneZwsAnchor(last)) {
+				endAnchor = new CKEDITOR.dom.text(zeroWidthSpace, editor.document);
+				rtElement.append(endAnchor);
+			} else {
+				endAnchor = last;
+			}
+
+			if (startAnchor.equals(endAnchor)) {
+				endAnchor = new CKEDITOR.dom.text(zeroWidthSpace, editor.document);
+				endAnchor.insertAfter(startAnchor);
+			}
+
+			return {
+				startAnchor: startAnchor,
+				endAnchor: endAnchor
+			};
+		}
+
+		/**
+		 * @param {CKEDITOR.dom.element} rtElement
+		 * @returns {{ node: CKEDITOR.dom.text, offset: Number }|null}
+		 */
+		function getFirstVisibleCharPosition(rtElement) {
+			var walkerRange = new CKEDITOR.dom.range(editor.document);
+			walkerRange.selectNodeContents(rtElement);
+			var walker = new CKEDITOR.dom.walker(walkerRange);
+			var node = walker.next();
+
+			while (node) {
+				if (node.type === CKEDITOR.NODE_TEXT) {
+					var text = node.getText();
+					for (var i = 0; i < text.length; i++) {
+						if (text.charAt(i) !== zeroWidthSpace) {
+							return {
+								node: node,
+								offset: i
+							};
+						}
+					}
+				}
+				node = walker.next();
+			}
+
+			return null;
+		}
+
+		/**
+		 * @param {CKEDITOR.dom.range} range
+		 * @param {CKEDITOR.dom.element} rtElement
+		 * @param {{ node: CKEDITOR.dom.text, offset: Number }} firstVisiblePosition
+		 * @returns {Boolean}
+		 */
+		function isCaretAtOrBeforeFirstVisible(range, rtElement, firstVisiblePosition) {
+			if (range.startContainer.equals(firstVisiblePosition.node)) {
+				return range.startOffset <= firstVisiblePosition.offset;
+			}
+
+			var node = rtElement.getFirst();
+			while (node) {
+				if (node.equals(range.startContainer)) {
+					return true;
+				}
+				if (node.equals(firstVisiblePosition.node)) {
+					return false;
+				}
+				node = node.getNext();
+			}
+
+			return false;
+		}
+
+		/**
+		 * @param {CKEDITOR.dom.element} rtElement
+		 */
+		function placeCaretAtRtStart(rtElement) {
+			var anchors = ensureRtAnchors(rtElement);
+			var selection = editor.getSelection();
+			var range = new CKEDITOR.dom.range(editor.document);
+
+			range.setStart(anchors.startAnchor, 1);
+			range.collapse(true);
+			selection.selectRanges([range]);
+		}
+
+		/**
+		 * Delete first visible rt character when caret is before it.
+		 * @param {CKEDITOR.dom.selection} selection
+		 * @param {Number} keyCode
+		 * @returns {Boolean}
+		 */
+		function guardRtLeadingDelete(selection, keyCode) {
+			if (!selection || !selection.isCollapsed() || (keyCode !== 8 && keyCode !== 46)) {
+				return false;
+			}
+
+			var range = selection.getRanges()[0];
+			if (!range) {
+				return false;
+			}
+
+			var startContainer = range.startContainer;
+			if (!startContainer || !startContainer.getAscendant) {
+				return false;
+			}
+
+			var rtElement = startContainer.getAscendant('rt', true);
+			if (!rtElement) {
+				return false;
+			}
+
+			ensureRtAnchors(rtElement);
+			var firstVisiblePosition = getFirstVisibleCharPosition(rtElement);
+
+			if (!firstVisiblePosition || !isCaretAtOrBeforeFirstVisible(range, rtElement, firstVisiblePosition)) {
+				return false;
+			}
+
+			editor.fire('saveSnapshot');
+			editor.fire('lockSnapshot');
+			try {
+				var text = firstVisiblePosition.node.getText();
+				firstVisiblePosition.node.$.nodeValue = text.slice(0, firstVisiblePosition.offset) + text.slice(firstVisiblePosition.offset + 1);
+				ensureRtAnchors(rtElement);
+				placeCaretAtRtStart(rtElement);
+			} finally {
+				editor.fire('unlockSnapshot');
+			}
+
+			return true;
+		}
+
+		/**
+		 * @param {CKEDITOR.dom.node} startNode
+		 */
+		function ensurePlaceholderForRt(startNode) {
+			if (!startNode || !startNode.getAscendant) {
+				return;
+			}
+
+			var rtElement = startNode.getAscendant('rt', true);
+
+			if (rtElement) {
+				ensureRtAnchors(rtElement);
+			}
+		}
+
+		/**
+		 * Keep collapsed caret inside ruby top text to prevent input leaking to rb.
+		 * @param {CKEDITOR.dom.selection} selection
+		 * @param {CKEDITOR.dom.node} [targetNode]
+		 * @returns {Boolean}
+		 */
+		function normalizeCaretIntoRt(selection, targetNode) {
+			if (isNormalizingSelection || !selection || !selection.isCollapsed()) {
+				return false;
+			}
+
+			var range = selection.getRanges()[0];
+			if (!range) {
+				return false;
+			}
+
+			var startContainer = range.startContainer;
+			if (!startContainer || !startContainer.getAscendant) {
+				return false;
+			}
+
+			var currentRtElement = startContainer.getAscendant('rt', true);
+			if (currentRtElement) {
+				ensureRtAnchors(currentRtElement);
+				return false;
+			}
+
+			var rubyElement = targetNode && targetNode.getAscendant ? targetNode.getAscendant('ruby', true) : null;
+			if (!rubyElement) {
+				rubyElement = startContainer.getAscendant('ruby', true);
+			}
+			if (!rubyElement) {
+				return false;
+			}
+
+			var rtElements = rubyElement.find('rt');
+			var rtElement = rtElements.count() ? rtElements.getItem(0) : null;
+			if (!rtElement) {
+				return false;
+			}
+
+			var rtAnchors = ensureRtAnchors(rtElement);
+			var caretRange = new CKEDITOR.dom.range(editor.document);
+			var moveToRtStart = true;
+			var rtIndex = rtElement.getIndex();
+
+			if (startContainer.equals(rubyElement) && range.startOffset > rtIndex) {
+				moveToRtStart = false;
+			}
+
+			if (moveToRtStart) {
+				caretRange.setStart(rtAnchors.startAnchor, 1);
+			} else {
+				caretRange.setStartBefore(rtAnchors.endAnchor);
+			}
+
+			caretRange.collapse(true);
+			isNormalizingSelection = true;
+			try {
+				selection.selectRanges([caretRange]);
+			} finally {
+				isNormalizingSelection = false;
+			}
+
+			return true;
+		}
+
+		/**
+		 * @param {String} data
+		 * @returns {String}
+		 */
+		function sanitizeRubyData(data) {
+			return data.replace(rubyTopContentRegex, function(match, openingTag, content, closingTag) {
+				return openingTag + content.replace(zeroWidthSpaceRegex, '') + closingTag;
+			});
+		}
+
+		/**
 		 * @param {Node} startNode
 		 * @param {Boolean} byClick
 		 * @param {Selection} selection
@@ -130,19 +429,20 @@ CKEDITOR.plugins.add('taofurigana', {
 			if (!rubyElement) {
 				return false;
 			}
-			var rbElement = rubyElement.find('rb');
-			var rtElement = rubyElement.find('rt');
+			var rbElements = rubyElement.find('rb');
+			var rtElements = rubyElement.find('rt');
+			var rbElement = rbElements.count() ? rbElements.getItem(0) : null;
+			var rtElement = rtElements.count() ? rtElements.getItem(0) : null;
 			var range;
-			if (rbElement.$.length && !rtElement.$.length ||
-				byClick && rbElement.$.length && rtElement.$.length && !rtElement.$[0].innerText.trim()) {
+			if ((rbElement && !rtElement) ||
+				(byClick && rbElement && rtElement && isRtEffectivelyEmpty(rtElement))) {
 				// if rt is deleted
 				// of if click on toolbar button check that it is empty
 				// remove ruby, put base as text
 				editor.fire('saveSnapshot');
 				editor.fire('lockSnapshot');
 				try {
-					var rbNode = rbElement.count() ? rbElement.getItem(0) : null;
-					var baseText = rbNode ? rbNode.getText() : '';
+					var baseText = rbElement ? rbElement.getText() : '';
 					var replacement = new CKEDITOR.dom.text(baseText, editor.document);
 					replacement.replace(rubyElement);
 					if (!byClick) {
@@ -216,39 +516,41 @@ CKEDITOR.plugins.add('taofurigana', {
 		}
 
 		/**
-		 * Remove zero-width placeholders from rt and unwrap empty ruby nodes.
+		 * Remove empty ruby nodes when rt contains no user-visible content.
 		 * @param {CkEditor} editor - ckEditor instance
 		 * @param {Boolean} useSnapshots - Wrap ruby unwrapping with snapshot lock.
 		 * @returns {boolean}
 		 */
-		function cleanupRubyElements(editor, useSnapshots) {
+		function cleanupEmptyRubyElements(editor, useSnapshots) {
 			var rubyElements = editor.document.find('ruby');
 			var modified = false;
 
 			for (var i = 0; i < rubyElements.count(); i++) {
 				var ruby = rubyElements.getItem(i);
-				var rtElement = ruby.find('rt');
+				var rtElements = ruby.find('rt');
+				var rtElement = rtElements.count() ? rtElements.getItem(0) : null;
 
-				if (rtElement.$.length) {
-					var rtDom = rtElement.getItem(0).$;
-					var originalInnerHTML = rtDom.innerHTML;
-					rtDom.innerHTML = rtDom.innerHTML.replace(/\u200B/g, '');
-					if (originalInnerHTML !== rtDom.innerHTML) {
-						modified = true;
-					}
-				}
-
-				if (rtElement.$.length && rtElement.$[0].innerText.trim() === '') {
-					var rbElement = ruby.find('rb');
-					if (rbElement.$.length) {
+				if (rtElement && isRtEffectivelyEmpty(rtElement)) {
+					var rbElements = ruby.find('rb');
+					if (rbElements.count()) {
 						if (useSnapshots) {
 							editor.fire('saveSnapshot');
 							editor.fire('lockSnapshot');
 						}
 
 						try {
-							var rbHtml = new CKEDITOR.dom.element.createFromHtml(rbElement.$[0].innerHTML);
-							rbHtml.replace(ruby);
+							var rbItem = rbElements.getItem(0);
+							var rbInnerHtml = rbItem.$.innerHTML;
+							var replacement;
+							try {
+								replacement = CKEDITOR.dom.element.createFromHtml(rbInnerHtml, editor.document);
+							} catch (err) {
+								replacement = null;
+							}
+							if (!replacement || replacement.type === CKEDITOR.NODE_TEXT) {
+								replacement = new CKEDITOR.dom.text(rbItem.getText(), editor.document);
+							}
+							replacement.replace(ruby);
 							modified = true;
 						} finally {
 							if (useSnapshots) {
@@ -315,21 +617,20 @@ CKEDITOR.plugins.add('taofurigana', {
 					rubyElement.append(rbElement);
 					rubyElement.append(rtElement);
 
-					// create a temporary text node for cursor placement without spaces
-					var rtPlaceholder = new CKEDITOR.dom.text('\u200b', editor.document);
-					rtElement.append(rtPlaceholder);
+					// keep a zero-width placeholder in the live DOM so rt remains editable.
+					var rtAnchors = ensureRtAnchors(rtElement);
 
 					editor.insertElement(rubyElement);
 					// add a zero-width space for the better navigation in Chrome (version >= 128) to the next sibling
 					var nextSibling = rubyElement.getNext();
 					if (!nextSibling || (nextSibling.type === CKEDITOR.NODE_TEXT && nextSibling.getText().trim() === '')) {
-						var zeroWidthSpace = new CKEDITOR.dom.text('\u200b', editor.document);
-						zeroWidthSpace.insertAfter(rubyElement);
+						var nextSiblingPlaceholder = new CKEDITOR.dom.text(zeroWidthSpace, editor.document);
+						nextSiblingPlaceholder.insertAfter(rubyElement);
 					}
 
-					// move cursor inside rt placeholder text node
+					// place the caret inside the rt start placeholder.
 					range = new CKEDITOR.dom.range(editor.document);
-					range.setStart(rtPlaceholder, 1);
+					range.setStart(rtAnchors.startAnchor, 1);
 					range.collapse(true);
 					editor.getSelection().removeAllRanges();
 					editor.getSelection().selectRanges([range]);
@@ -347,15 +648,45 @@ CKEDITOR.plugins.add('taofurigana', {
 			editable.attachListener(editable, 'mouseup', function () {
 				refreshCommandState(editor);
 			});
+			editable.attachListener(editable, 'focus', function (evt) {
+				var selection = editor.getSelection();
+				var target = evt && evt.data && evt.data.getTarget ? evt.data.getTarget() : null;
+				normalizeCaretIntoRt(selection, target);
+				var range = selection && selection.getRanges()[0];
+				if (range) {
+					ensurePlaceholderForRt(range.startContainer);
+				}
+			});
 			editable.attachListener(editable, 'keyup', function () {
 				refreshCommandState(editor);
 			});
+			editable.attachListener(editable, 'keydown', function(evt) {
+				var domEvent = evt && evt.data && evt.data.$ ? evt.data.$ : null;
+				var keyCode = domEvent ? domEvent.keyCode : null;
+				var selection = editor.getSelection();
+
+				if (guardRtLeadingDelete(selection, keyCode)) {
+					if (evt && evt.data && evt.data.preventDefault) {
+						evt.data.preventDefault();
+					}
+					editor.fire('change');
+					refreshCommandState(editor);
+				}
+			});
+			editor.on('selectionChange', function() {
+				var selection = editor.getSelection();
+				normalizeCaretIntoRt(selection);
+				var range = selection && selection.getRanges()[0];
+				if (range) {
+					ensurePlaceholderForRt(range.startContainer);
+				}
+			});
 		});
-		editor.on('beforeGetData', function() {
-			cleanupRubyElements(editor, false);
+		editor.on('getData', function(evt) {
+			evt.data.dataValue = sanitizeRubyData(evt.data.dataValue);
 		});
 		editor.on('blur', function() {
-			var modified = cleanupRubyElements(editor, true);
+			var modified = cleanupEmptyRubyElements(editor, true);
 			//update editor textarea
 			if (modified) {
 				//
