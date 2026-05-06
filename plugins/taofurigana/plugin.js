@@ -274,10 +274,16 @@ CKEDITOR.plugins.add('taofurigana', {
 				return false;
 			}
 
-			var text = firstVisiblePosition.node.getText();
-			firstVisiblePosition.node.$.nodeValue = text.slice(0, firstVisiblePosition.offset) + text.slice(firstVisiblePosition.offset + 1);
-			ensureRtAnchors(rtElement);
-			placeCaretAtRtStart(rtElement);
+			editor.fire('saveSnapshot');
+			editor.fire('lockSnapshot');
+			try {
+				var text = firstVisiblePosition.node.getText();
+				firstVisiblePosition.node.$.nodeValue = text.slice(0, firstVisiblePosition.offset) + text.slice(firstVisiblePosition.offset + 1);
+				ensureRtAnchors(rtElement);
+				placeCaretAtRtStart(rtElement);
+			} finally {
+				editor.fire('unlockSnapshot');
+			}
 
 			return true;
 		}
@@ -495,7 +501,7 @@ CKEDITOR.plugins.add('taofurigana', {
 						}
 
 						try {
-							var rbHtml = new CKEDITOR.dom.element.createFromHtml(rbElements.getItem(0).$.innerHTML);
+							var rbHtml = CKEDITOR.dom.element.createFromHtml(rbElements.getItem(0).$.innerHTML);
 							rbHtml.replace(ruby);
 							modified = true;
 						} finally {
