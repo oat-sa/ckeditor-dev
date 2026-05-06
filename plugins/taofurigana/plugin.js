@@ -591,14 +591,7 @@ CKEDITOR.plugins.add('taofurigana', {
 			var command = editor.getCommand(commandName);
 			command.setState(CKEDITOR.TRISTATE_DISABLED);
 
-			editable.attachListener(editable, 'mouseup', function (evt) {
-				var selection = editor.getSelection();
-				var target = evt && evt.data && evt.data.getTarget ? evt.data.getTarget() : null;
-				normalizeCaretIntoRt(selection, target);
-				var range = selection && selection.getRanges()[0];
-				if (range) {
-					ensurePlaceholderForRt(range.startContainer);
-				}
+			editable.attachListener(editable, 'mouseup', function () {
 				refreshCommandState(editor);
 			});
 			editable.attachListener(editable, 'focus', function (evt) {
@@ -611,12 +604,6 @@ CKEDITOR.plugins.add('taofurigana', {
 				}
 			});
 			editable.attachListener(editable, 'keyup', function () {
-				var selection = editor.getSelection();
-				normalizeCaretIntoRt(selection);
-				var range = selection && selection.getRanges()[0];
-				if (range) {
-					ensurePlaceholderForRt(range.startContainer);
-				}
 				refreshCommandState(editor);
 			});
 			editable.attachListener(editable, 'keydown', function(evt) {
