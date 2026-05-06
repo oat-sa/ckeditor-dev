@@ -133,40 +133,78 @@ CKEDITOR.plugins.add('taofurigana', {
 			return textContent.replace(zeroWidthSpaceRegex, '').trim() === '';
 		}
 
-		function hasLeadingAnchor(textNode) {
-			return textNode &&
-				textNode.type === CKEDITOR.NODE_TEXT &&
-				textNode.getText().charAt(0) === zeroWidthSpace;
-		}
-
-		function hasTrailingAnchor(textNode) {
-			var text = textNode && textNode.type === CKEDITOR.NODE_TEXT ? textNode.getText() : '';
-
-			return text.charAt(text.length - 1) === zeroWidthSpace;
+		/**
+		 * Valid anchor: a text node whose entire contents are exactly one zero-width space (no mixed text).
+		 * @param {CKEDITOR.dom.node} node
+		 * @returns {boolean}
+		 */
+		function isStandaloneZwsAnchor(node) {
+			return node &&
+				node.type === CKEDITOR.NODE_TEXT &&
+				node.getText() === zeroWidthSpace;
 		}
 
 		/**
 		 * Ensure rt has editable start/end anchors in the live DOM.
+		 * Start and end are always distinct CKEDITOR.dom.text nodes when possible (never one node for both).
 		 * @param {CKEDITOR.dom.element} rtElement
 		 * @returns {{ startAnchor: CKEDITOR.dom.text, endAnchor: CKEDITOR.dom.text }}
 		 */
 		function ensureRtAnchors(rtElement) {
-			var firstChild = rtElement.getFirst();
-			var startAnchor = hasLeadingAnchor(firstChild) ? firstChild : null;
-			if (!startAnchor) {
+			var first = rtElement.getFirst();
+			var last = rtElement.getLast();
+			var startAnchor;
+			var endAnchor;
+
+			if (!first) {
 				startAnchor = new CKEDITOR.dom.text(zeroWidthSpace, editor.document);
-				if (firstChild) {
-					startAnchor.insertBefore(firstChild);
-				} else {
-					rtElement.append(startAnchor);
-				}
+				endAnchor = new CKEDITOR.dom.text(zeroWidthSpace, editor.document);
+				rtElement.append(startAnchor);
+				rtElement.append(endAnchor);
+				return {
+					startAnchor: startAnchor,
+					endAnchor: endAnchor
+				};
 			}
 
-			var lastChild = rtElement.getLast();
-			var endAnchor = hasTrailingAnchor(lastChild) ? lastChild : null;
-			if (!endAnchor) {
+			if (first.equals(last)) {
+				if (isStandaloneZwsAnchor(first)) {
+					first.remove();
+					startAnchor = new CKEDITOR.dom.text(zeroWidthSpace, editor.document);
+					endAnchor = new CKEDITOR.dom.text(zeroWidthSpace, editor.document);
+					rtElement.append(startAnchor);
+					rtElement.append(endAnchor);
+				} else {
+					startAnchor = new CKEDITOR.dom.text(zeroWidthSpace, editor.document);
+					endAnchor = new CKEDITOR.dom.text(zeroWidthSpace, editor.document);
+					startAnchor.insertBefore(first);
+					endAnchor.insertAfter(first);
+				}
+				return {
+					startAnchor: startAnchor,
+					endAnchor: endAnchor
+				};
+			}
+
+			if (!isStandaloneZwsAnchor(first)) {
+				startAnchor = new CKEDITOR.dom.text(zeroWidthSpace, editor.document);
+				startAnchor.insertBefore(first);
+			} else {
+				startAnchor = first;
+			}
+
+			last = rtElement.getLast();
+
+			if (!isStandaloneZwsAnchor(last)) {
 				endAnchor = new CKEDITOR.dom.text(zeroWidthSpace, editor.document);
 				rtElement.append(endAnchor);
+			} else {
+				endAnchor = last;
+			}
+
+			if (startAnchor.equals(endAnchor)) {
+				endAnchor = new CKEDITOR.dom.text(zeroWidthSpace, editor.document);
+				endAnchor.insertAfter(startAnchor);
 			}
 
 			return {
