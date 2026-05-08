@@ -9,6 +9,9 @@ CKEDITOR.plugins.add('taofurigana', {
 		var rubyTopContentRegex = /(<rt\b[^>]*>)([\s\S]*?)(<\/rt>)/gi;
 		var isNormalizingSelection = false;
 		var containsTag;
+		var statelessButtons = [];
+		var statelessButtonsList = [
+			'bold', 'italic', 'strike', 'spanUnderline', 'subscript', 'superscript'];
 		var otherButtons = [];
 		var combos = [];
 
@@ -87,6 +90,19 @@ CKEDITOR.plugins.add('taofurigana', {
 			}
 
 			return node.getAscendant('ruby') !== null;
+		}
+
+		/**
+		 * Make sure that the current selection is already inside rt of furigana/ruby
+		 * @param {Node} node
+		 * @returns {boolean}
+		 */
+		function isInRtFugirana(node) {
+			if (!node) {
+				return false;
+			}
+
+			return isInFugirana(node) && node.getAscendant('rt', true) !== null;
 		}
 
 		/**
@@ -474,6 +490,9 @@ CKEDITOR.plugins.add('taofurigana', {
 						element.items.forEach(function (item) {
 							if (item.command && item.command !== commandName) {
 								otherButtons.push(item.command);
+								if (statelessButtonsList.includes(item.command)) {
+									statelessButtons.push(item);
+								}
 							} else if (!item.command && typeof item.setState !== "undefined") {
 								combos.push(item);
 							}
@@ -501,6 +520,14 @@ CKEDITOR.plugins.add('taofurigana', {
 					if (deleteRubyIfNoRt(range.startContainer, false, selection)) {
 						command.setState(CKEDITOR.TRISTATE_DISABLED);
 						setButtonsState(CKEDITOR.TRISTATE_OFF);
+					} else if (!isInRtFugirana(range.startContainer)) {
+						command.setState(CKEDITOR.TRISTATE_ON);
+						setTimeout(function () {
+							setButtonsState(CKEDITOR.TRISTATE_DISABLED);
+							statelessButtons.forEach(function (button) {
+								button.setState(CKEDITOR.TRISTATE_OFF);
+							});
+						}, 150);
 					} else {
 						command.setState(CKEDITOR.TRISTATE_ON);
 						setTimeout(function () {
