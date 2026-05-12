@@ -14,6 +14,7 @@ CKEDITOR.plugins.add('taofurigana', {
         var combos = [];
         const keyCodeDelete = 46;
         const keyCodeBackspace = 8;
+        const keyCodeLeftArrow = 37;
 
         /**
          * @param {CKEDITOR.dom.selection} selection
@@ -453,7 +454,6 @@ CKEDITOR.plugins.add('taofurigana', {
                     } finally {
                         isNormalizingSelection = false;
                     }
-                    refreshCommandState(editor);
                     return true;
                 }
             }
@@ -481,14 +481,16 @@ CKEDITOR.plugins.add('taofurigana', {
         }
 
         /**
-         * Chrome issue: if caret is after ruby, and you press 'Backspace', then *all content* before caret position gets deleted, not only ruby.
-         * So, need to override native 'Backspace' behavior. For simplicity, just move caret inside rt.
+         * Chrome issue: if caret is after ruby, and:
+		 *  - you press 'Backspace' -> *all content* before caret position gets deleted, not only ruby.
+		 *  - you press 'LeftArrow' -> caret moves to the very beginning of the content.
+         * So, need to override native behavior for these keys. For simplicity, just move caret inside rt.
          * @param {CKEDITOR.dom.selection} selection
          * @param {Number} keyCode
          * @returns {Boolean}
          */
-        function guardBackspaceAfterRuby(selection, keyCode) {
-            if ((keyCode !== keyCodeBackspace) || !selection || !selection.isCollapsed()) {
+        function guardBackspaceOrLeftArrowAfterRuby(selection, keyCode) {
+            if ((keyCode !== keyCodeBackspace && keyCode !== keyCodeLeftArrow) || !selection || !selection.isCollapsed()) {
                 return false;
             }
 
@@ -501,9 +503,9 @@ CKEDITOR.plugins.add('taofurigana', {
 
             let prevRubyElement;
             const prevSibling = node.getPrevious();
-            if (isRubyNode(prevSibling )) {
+            if (isRubyNode(prevSibling) && isZwsAnchorAfterRuby(node) && range.startOffset <= 1) {
                 prevRubyElement = prevSibling;
-            } else if (isZwsAnchorAfterRuby(prevSibling)) {
+            } else if (isZwsAnchorAfterRuby(prevSibling) && range.startOffset === 0) {
                 const prevPrevSibling = prevSibling.getPrevious();
                 if (isRubyNode(prevPrevSibling)) {
                     prevRubyElement = prevPrevSibling;
@@ -646,6 +648,10 @@ CKEDITOR.plugins.add('taofurigana', {
                     var baseText = rbElement ? rbElement.getText() : '';
                     var replacement = new CKEDITOR.dom.text(baseText, editor.document);
                     replacement.replace(rubyElement);
+
+					var nextSibling = replacement.getNext();
+                    cleanupZwsAnchor(nextSibling);
+
                     if (!byClick) {
                         // keep caret on the base text
                         range = new CKEDITOR.dom.range(editor.document);
@@ -878,7 +884,7 @@ CKEDITOR.plugins.add('taofurigana', {
 
                 if (
                     guardRtLeadingDelete(selection, keyCode) ||
-                    guardBackspaceAfterRuby(selection, keyCode) ||
+                    guardBackspaceOrLeftArrowAfterRuby(selection, keyCode) ||
                     guardLastDeleteInRuby(selection, keyCode)
                 ) {
                     if (evt && evt.data && evt.data.preventDefault) {
