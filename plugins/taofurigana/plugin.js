@@ -9,10 +9,10 @@ CKEDITOR.plugins.add('taofurigana', {
 		var rubyTopContentRegex = /(<rt\b[^>]*>)([\s\S]*?)(<\/rt>)/gi;
 		var isNormalizingSelection = false;
 		var isRestoringZwsAnchor = false;
+		let isLastMousedownInsideEditor = false;
 		var containsTag;
 		var statelessButtons = [];
-		var statelessButtonsList = [
-			'bold', 'italic', 'strike', 'spanUnderline', 'subscript', 'superscript'];
+		var statelessButtonsList = ['bold', 'italic', 'strike', 'spanUnderline', 'subscript', 'superscript'];
 		var otherButtons = [];
 		var combos = [];
 		const keyCodeDelete = 46;
@@ -153,9 +153,16 @@ CKEDITOR.plugins.add('taofurigana', {
 		 * @returns {boolean}
 		 */
 		function isEffectivelyEmpty(rtElement) {
-			var textContent = rtElement.$.textContent || '';
+			return getEffectiveLength(rtElement) === 0;
+		}
 
-			return textContent.replace(zeroWidthSpaceRegex, '').trim() === '';
+		/**
+		 * @param {CKEDITOR.dom.element} rtElement
+		 * @returns {boolean}
+		 */
+		function getEffectiveLength(rtElement) {
+			var textContent = rtElement.$.textContent || '';
+			return textContent.replace(zeroWidthSpaceRegex, '').trim().length;
 		}
 
 		/**
@@ -388,8 +395,11 @@ CKEDITOR.plugins.add('taofurigana', {
 
 			var currentRtElement = startContainer.getAscendant('rt', true);
 			if (currentRtElement) {
+				const isAtRtStart = range.startOffset === 0;
 				ensureRtAnchors(currentRtElement);
-				return false;
+				if (!isAtRtStart) {
+					return false;
+				}
 			}
 
 			var rubyElement = targetNode && targetNode.getAscendant ? targetNode.getAscendant('ruby', true) : null;
@@ -491,9 +501,11 @@ CKEDITOR.plugins.add('taofurigana', {
 		 * @returns {String}
 		 */
 		function sanitizeRubyData(data) {
-			return data.replace(rubyTopContentRegex, function (match, openingTag, content, closingTag) {
-				return openingTag + content.replace(zeroWidthSpaceRegex, '') + closingTag;
-			}).replace(/<\/ruby>(?:\u200B)+/gi, '</ruby>');
+			return data
+				.replace(rubyTopContentRegex, function (match, openingTag, content, closingTag) {
+					return openingTag + content.replace(zeroWidthSpaceRegex, '') + closingTag;
+				})
+				.replace(/<\/ruby>(?:\u200B)+/gi, '</ruby>');
 		}
 
 		/**
@@ -506,7 +518,11 @@ CKEDITOR.plugins.add('taofurigana', {
 		 * @returns {Boolean}
 		 */
 		function guardBackspaceOrLeftArrowAfterRuby(selection, keyCode) {
-			if ((keyCode !== keyCodeBackspace && keyCode !== keyCodeLeftArrow) || !selection || !selection.isCollapsed()) {
+			if (
+				(keyCode !== keyCodeBackspace && keyCode !== keyCodeLeftArrow) ||
+				!selection ||
+				!selection.isCollapsed()
+			) {
 				return false;
 			}
 
@@ -515,20 +531,9 @@ CKEDITOR.plugins.add('taofurigana', {
 				return false;
 			}
 
-			const node = range.startContainer;
-
-			let prevRubyElement;
-			const prevSibling = node.getPrevious();
-			if (isRubyNode(prevSibling) && isZwsAnchorAfterRuby(node) && range.startOffset <= 1) {
-				prevRubyElement = prevSibling;
-			} else if (isZwsAnchorAfterRuby(prevSibling) && range.startOffset === 0) {
-				const prevPrevSibling = prevSibling.getPrevious();
-				if (isRubyNode(prevPrevSibling)) {
-					prevRubyElement = prevPrevSibling;
-				}
-			}
-			if (prevRubyElement) {
-				var rtElement = prevRubyElement.findOne('rt');
+			const rubyElement = findAdjacentRuby(range, false);
+			if (rubyElement) {
+				const rtElement = rubyElement.findOne('rt');
 				if (!rtElement) {
 					return false;
 				}
@@ -546,7 +551,6 @@ CKEDITOR.plugins.add('taofurigana', {
 			return false;
 		}
 
-
 		/**
 		 * When user presses 'Delete' in the ruby where everything is already deleted:
 		 * ruby itself will be deleted, but zero-width space after it will not.
@@ -556,23 +560,26 @@ CKEDITOR.plugins.add('taofurigana', {
 		 * @returns {Boolean}
 		 */
 		function guardLastDeleteInRuby(selection, keyCode) {
-			if ((keyCode !== keyCodeDelete) || !selection || !selection.isCollapsed()) {
+			if ((keyCode !== keyCodeDelete && keyCode !== keyCodeBackspace) || !selection || !selection.isCollapsed()) {
 				return false;
 			}
 
 			var range = selection.getRanges()[0];
-			if (!range) {
+			if (!range || !range.startContainer) {
 				return false;
 			}
 
-			const node = range.startContainer;
-
-			const nextSibling  = node.getNext();
-			if (isRubyNode(nextSibling)) {
-				const rubyElement = nextSibling;
-				var rtElement = rubyElement.findOne('rt');
-				var rbElement = rubyElement.findOne('rb');
-				if ((rtElement && !isEffectivelyEmpty(rtElement)) || (rbElement && !isEffectivelyEmpty(rbElement))) {
+			const deleteDirectionToNext = keyCode === keyCodeDelete;
+			let rubyElement = range.startContainer.getAscendant('ruby');
+			if (!rubyElement) {
+				rubyElement = findAdjacentRuby(range, deleteDirectionToNext);
+			}
+			if (rubyElement) {
+				const rtElement = rubyElement.findOne('rt');
+				const rbElement = rubyElement.findOne('rb');
+				const rtLength = rtElement ? getEffectiveLength(rtElement) : 0;
+				const rbLength = rbElement ? getEffectiveLength(rbElement) : 0;
+				if (rtLength + rbLength > 1) {
 					return false;
 				}
 
@@ -591,14 +598,40 @@ CKEDITOR.plugins.add('taofurigana', {
 			return false;
 		}
 
+		/**
+		 *
+		 * @param {CKEDITOR.dom.range} range
+		 * @param {boolean} searchNext - if true, find adjacent ruby after the range. If false, before the range.
+		 * @returns
+		 */
+		function findAdjacentRuby(range, searchNext) {
+			if (searchNext) {
+				const node = range.endContainer;
+				const nextSibling = node.getNext();
+				if (isRubyNode(nextSibling)) {
+					return nextSibling;
+				}
+			} else {
+				//searchPrevious
+				const node = range.startContainer;
+				const prevSibling = node.getPrevious();
+				if (isRubyNode(prevSibling) && isZwsAnchorAfterRuby(node) && range.startOffset <= 1) {
+					return prevSibling;
+				} else if (isZwsAnchorAfterRuby(prevSibling) && range.startOffset === 0) {
+					const prevPrevSibling = prevSibling.getPrevious();
+					if (isRubyNode(prevPrevSibling)) {
+						return prevPrevSibling;
+					}
+				}
+			}
+		}
+
 		function isRubyNode(node) {
 			return node && node.getName && node.getName() === 'ruby';
 		}
 
 		function isZwsAnchorAfterRuby(node) {
-			return node &&
-				node.type === CKEDITOR.NODE_TEXT &&
-				node.getText().startsWith(zeroWidthSpace);
+			return node && node.type === CKEDITOR.NODE_TEXT && node.getText().startsWith(zeroWidthSpace);
 		}
 
 		/**
@@ -636,6 +669,24 @@ CKEDITOR.plugins.add('taofurigana', {
 		function insertZwsAnchorAfterRuby(rubyElement) {
 			var zwsAnchor = new CKEDITOR.dom.text(zeroWidthSpace, editor.document);
 			zwsAnchor.insertAfter(rubyElement);
+		}
+
+		function isSelectionBeforeZwsAnchorOfRt(selection) {
+			if (!selection || !selection.isCollapsed()) {
+				return false;
+			}
+			var range = selection.getRanges()[0];
+			var node = range.startContainer;
+			if (
+				range.startOffset === 0 &&
+				node &&
+				node.type === CKEDITOR.NODE_TEXT &&
+				node.getParent().getName() === 'rt' &&
+				node.getText().startsWith(zeroWidthSpace)
+			) {
+				return true;
+			}
+			return false;
 		}
 
 		/**
@@ -700,7 +751,7 @@ CKEDITOR.plugins.add('taofurigana', {
 								if (statelessButtonsList.includes(item.command)) {
 									statelessButtons.push(item);
 								}
-							} else if (!item.command && typeof item.setState !== "undefined") {
+							} else if (!item.command && typeof item.setState !== 'undefined') {
 								combos.push(item);
 							}
 						});
@@ -895,7 +946,18 @@ CKEDITOR.plugins.add('taofurigana', {
 			command.setState(CKEDITOR.TRISTATE_DISABLED);
 
 			editable.attachListener(CKEDITOR.document, 'mouseup', function () {
-				refreshCommandState(editor);
+				if (isLastMousedownInsideEditor) {
+					isLastMousedownInsideEditor = false;
+					refreshCommandState(editor);
+
+					const selection = editor.getSelection();
+					if (isSelectionBeforeZwsAnchorOfRt(selection)) {
+						normalizeCaret(selection);
+					}
+				}
+			});
+			editable.attachListener(editable, 'mousedown', function () {
+				isLastMousedownInsideEditor = true;
 			});
 			editable.attachListener(editable, 'focus', function (evt) {
 				var target = evt && evt.data && evt.data.getTarget ? evt.data.getTarget() : null;
@@ -928,7 +990,7 @@ CKEDITOR.plugins.add('taofurigana', {
 		editor.on('dataReady', function () {
 			ensureZwsAnchorsAfterRuby();
 		});
-		editor.on('getData', function(evt) {
+		editor.on('getData', function (evt) {
 			evt.data.dataValue = sanitizeRubyData(evt.data.dataValue);
 		});
 		editor.on('blur', function () {
