@@ -782,7 +782,6 @@ CKEDITOR.plugins.add('taofurigana', {
 						range.selectNodeContents(replacement);
 						selection.selectRanges([range]);
 					}
-					editor.updateElement();
 					editor.fire('change');
 				} finally {
 					editor.fire('unlockSnapshot');
@@ -951,15 +950,14 @@ CKEDITOR.plugins.add('taofurigana', {
 
 							textNode.replace(rubyElement);
 
+							var nextSibling = textNode.getNext();
+							cleanupZwsAnchor(nextSibling);
+
 							range = new CKEDITOR.dom.range(editor.document);
 							range.setStartAfter(textNode);
 							range.collapse(true);
 							selection.selectRanges([range]);
 
-							var nextSibling = textNode.getNext();
-							cleanupZwsAnchor(nextSibling);
-
-							editor.updateElement();
 							editor.fire('change');
 							refreshCommandState(editor);
 						} finally {
