@@ -465,11 +465,11 @@ CKEDITOR.plugins.add('taofurigana', {
 
             if (
                 startContainer.type === CKEDITOR.NODE_TEXT &&
-                startContainer.getParent().getName() === 'rb' &&
+                startContainer.getAscendant('rb', true) &&
                 range.endOffset === startContainer.getText().length
             ) {
                 var caretRange = new CKEDITOR.dom.range(editor.document);
-                var rubyElement = startContainer.getAscendant ? startContainer.getAscendant('ruby', true) : null;
+                var rubyElement = startContainer.getAscendant('ruby', true);
                 var nextNode = rubyElement.getNext();
                 if (nextNode) {
                     caretRange.setStart(nextNode, 1);
@@ -504,8 +504,7 @@ CKEDITOR.plugins.add('taofurigana', {
             return data
                 .replace(rubyTopContentRegex, function (match, openingTag, content, closingTag) {
                     return openingTag + content.replace(zeroWidthSpaceRegex, '') + closingTag;
-                })
-                .replace(/<\/ruby>(?:\u200B)+/gi, '</ruby>');
+                });
         }
 
         /**
@@ -676,7 +675,11 @@ CKEDITOR.plugins.add('taofurigana', {
         }
 
         function isZwsAnchorAfterRuby(node) {
-            return node && node.type === CKEDITOR.NODE_TEXT && node.getText().startsWith(zeroWidthSpace);
+			if (node && node.type === CKEDITOR.NODE_TEXT) {
+				const text = node.getText();
+				return text.length >= 1 && text[0] === zeroWidthSpace && text[1] !== zeroWidthSpace;
+			}
+            return false;
         }
 
         /**
@@ -703,10 +706,17 @@ CKEDITOR.plugins.add('taofurigana', {
                     if (isZwsAnchorAfterRuby(next)) {
                         continue;
                     }
-                    insertZwsAnchorAfterRuby(rubyElement);
+					// if bold/italic/underline was used over selection with ruby,
+					// zero-space will get inside the wrapper: '<ruby>...</ruby><em>\u200b</em>'
+					// remove orphan zero-space from there and readd it after the ruby.
+					// (NB! we can't reliably know if it's "our" zero-space or not, but let's assume it is...)
+					if (next.getFirst && isZwsAnchorAfterRuby(next.getFirst())) {
+						cleanupZwsAnchor(next.getFirst());
+					}
+					insertZwsAnchorAfterRuby(rubyElement);
                 }
             } finally {
-                editor.fire('unlockSnapshot');
+				editor.fire('unlockSnapshot');
                 isRestoringZwsAnchor = false;
             }
         }
@@ -726,7 +736,7 @@ CKEDITOR.plugins.add('taofurigana', {
                 range.startOffset === 0 &&
                 node &&
                 node.type === CKEDITOR.NODE_TEXT &&
-                node.getParent().getName() === 'rt' &&
+                node.getAscendant('rt', true) &&
                 node.getText().startsWith(zeroWidthSpace)
             ) {
                 return true;
@@ -1030,11 +1040,15 @@ CKEDITOR.plugins.add('taofurigana', {
                 }
             });
             editor.on('selectionChange', function () {
+				ensureZwsAnchorsAfterRuby();
                 normalizeCaret();
             });
         });
         editor.on('dataReady', function () {
             ensureZwsAnchorsAfterRuby();
+        });
+		editor.on('change', function (evt) {
+           ensureZwsAnchorsAfterRuby();
         });
         editor.on('getData', function (evt) {
             evt.data.dataValue = sanitizeRubyData(evt.data.dataValue);
