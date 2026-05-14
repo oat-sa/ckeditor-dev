@@ -443,57 +443,12 @@ CKEDITOR.plugins.add('taofurigana', {
 			return true;
 		}
 
-		/**
-		 * If user clicks on the right-half of the last character inside '<rb>',
-		 * move caret after the ruby.
-		 * @param {CKEDITOR.dom.selection} selection
-		 * @returns {Boolean}
-		 */
-		function normalizeCaretAfterRb(selection) {
-			if (isNormalizingSelection || !selection || !selection.isCollapsed()) {
-				return false;
-			}
-
-			var range = selection.getRanges()[0];
-			if (!range) {
-				return false;
-			}
-
-			var startContainer = range.startContainer;
-			if (!startContainer || !startContainer.getAscendant) {
-				return false;
-			}
-
-			if (
-				startContainer.type === CKEDITOR.NODE_TEXT &&
-				startContainer.getAscendant('rb', true) &&
-				range.endOffset === startContainer.getText().length
-			) {
-				var caretRange = new CKEDITOR.dom.range(editor.document);
-				var rubyElement = startContainer.getAscendant('ruby', true);
-				var nextNode = rubyElement.getNext();
-				if (nextNode) {
-					caretRange.setStart(nextNode, 1);
-					caretRange.collapse(true);
-					isNormalizingSelection = true;
-					try {
-						selection.selectRanges([caretRange]);
-					} finally {
-						isNormalizingSelection = false;
-					}
-					return true;
-				}
-			}
-		}
-
 		function normalizeCaret(focusEventTarget = null) {
 			var selection = editor.getSelection();
-			if (!normalizeCaretAfterRb(selection)) {
-				normalizeCaretIntoRt(selection, focusEventTarget);
-				var range = selection && selection.getRanges()[0];
-				if (range) {
-					ensurePlaceholderForRt(range.startContainer);
-				}
+			normalizeCaretIntoRt(selection, focusEventTarget);
+			var range = selection && selection.getRanges()[0];
+			if (range) {
+				ensurePlaceholderForRt(range.startContainer);
 			}
 		}
 
