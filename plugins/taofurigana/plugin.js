@@ -1,7 +1,7 @@
 CKEDITOR.plugins.add('taofurigana', {
 	lang: 'en', // %REMOVE_LINE_CORE%
 	init: function (editor) {
-		('use strict');
+		'use strict';
 
 		var commandName = 'rubyFurigana';
 		var zeroWidthSpace = '\u200b';
@@ -9,16 +9,16 @@ CKEDITOR.plugins.add('taofurigana', {
 		var rubyTopContentRegex = /(<rt\b[^>]*>)([\s\S]*?)(<\/rt>)/gi;
 		var isNormalizingSelection = false;
 		var isRestoringZwsAnchor = false;
-		let isLastMousedownInsideEditor = false;
-		let hasRuby = false; // to run listeners only if ruby is being used
+		var isLastMousedownInsideEditor = false;
+		var hasRuby = false; // to run listeners only if ruby is being used
 		var containsTag;
 		var statelessButtons = [];
 		var statelessButtonsList = ['bold', 'italic', 'strike', 'spanUnderline', 'subscript', 'superscript'];
 		var otherButtons = [];
 		var combos = [];
-		const keyCodeDelete = 46;
-		const keyCodeBackspace = 8;
-		const keyCodeLeftArrow = 37;
+		var keyCodeDelete = 46;
+		var keyCodeBackspace = 8;
+		var keyCodeLeftArrow = 37;
 
 		/**
 		 * @param {CKEDITOR.dom.selection} selection
@@ -396,7 +396,7 @@ CKEDITOR.plugins.add('taofurigana', {
 
 			var currentRtElement = startContainer.getAscendant('rt', true);
 			if (currentRtElement) {
-				const isAtRtStart = range.startOffset === 0;
+				var isAtRtStart = range.startOffset === 0;
 				ensureRtAnchors(currentRtElement);
 				if (!isAtRtStart) {
 					return false;
@@ -443,7 +443,7 @@ CKEDITOR.plugins.add('taofurigana', {
 			return true;
 		}
 
-		function normalizeCaret(focusEventTarget = null) {
+		function normalizeCaret(focusEventTarget) {
 			var selection = editor.getSelection();
 			normalizeCaretIntoRt(selection, focusEventTarget);
 			var range = selection && selection.getRanges()[0];
@@ -486,9 +486,9 @@ CKEDITOR.plugins.add('taofurigana', {
 				return false;
 			}
 
-			const rubyElement = findAdjacentRuby(range, false);
+			var rubyElement = findAdjacentRuby(range, false);
 			if (rubyElement) {
-				const rtElement = rubyElement.findOne('rt');
+				var rtElement = rubyElement.findOne('rt');
 				if (!rtElement) {
 					return false;
 				}
@@ -524,16 +524,16 @@ CKEDITOR.plugins.add('taofurigana', {
 				return false;
 			}
 
-			const deleteDirectionToNext = keyCode === keyCodeDelete;
-			let rubyElement = range.startContainer.getAscendant('ruby');
+			var deleteDirectionToNext = keyCode === keyCodeDelete;
+			var rubyElement = range.startContainer.getAscendant('ruby');
 			if (!rubyElement) {
 				rubyElement = findAdjacentRuby(range, deleteDirectionToNext);
 			}
 			if (rubyElement) {
-				const rtElement = rubyElement.findOne('rt');
-				const rbElement = rubyElement.findOne('rb');
-				const rtLength = rtElement ? getEffectiveLength(rtElement) : 0;
-				const rbLength = rbElement ? getEffectiveLength(rbElement) : 0;
+				var rtElement = rubyElement.findOne('rt');
+				var rbElement = rubyElement.findOne('rb');
+				var rtLength = rtElement ? getEffectiveLength(rtElement) : 0;
+				var rbLength = rbElement ? getEffectiveLength(rbElement) : 0;
 				if (rtLength + rbLength > 1) {
 					return false;
 				}
@@ -541,7 +541,7 @@ CKEDITOR.plugins.add('taofurigana', {
 				editor.fire('saveSnapshot');
 				editor.fire('lockSnapshot');
 				try {
-					const elementAfterRuby = rubyElement.getNext();
+					var elementAfterRuby = rubyElement.getNext();
 					rubyElement.remove();
 					cleanupZwsAnchor(elementAfterRuby);
 				} finally {
@@ -606,19 +606,19 @@ CKEDITOR.plugins.add('taofurigana', {
 		 */
 		function findAdjacentRuby(range, searchNext) {
 			if (searchNext) {
-				const node = range.endContainer;
-				const nextSibling = node.getNext();
+				var node = range.endContainer;
+				var nextSibling = node.getNext();
 				if (isRubyNode(nextSibling)) {
 					return nextSibling;
 				}
 			} else {
 				//searchPrevious
-				const node = range.startContainer;
-				const prevSibling = node.getPrevious();
+				var node = range.startContainer;
+				var prevSibling = node.getPrevious();
 				if (isRubyNode(prevSibling) && isZwsAnchorAfterRuby(node) && range.startOffset <= 1) {
 					return prevSibling;
 				} else if (isZwsAnchorAfterRuby(prevSibling) && range.startOffset === 0) {
-					const prevPrevSibling = prevSibling.getPrevious();
+					var prevPrevSibling = prevSibling.getPrevious();
 					if (isRubyNode(prevPrevSibling)) {
 						return prevPrevSibling;
 					}
@@ -632,7 +632,7 @@ CKEDITOR.plugins.add('taofurigana', {
 
 		function isZwsAnchorAfterRuby(node) {
 			if (node && node.type === CKEDITOR.NODE_TEXT) {
-				const text = node.getText();
+				var text = node.getText();
 				return text.length >= 1 && text[0] === zeroWidthSpace && text[1] !== zeroWidthSpace;
 			}
 			return false;
@@ -963,7 +963,7 @@ CKEDITOR.plugins.add('taofurigana', {
 					refreshCommandState(editor);
 
 					if (hasRuby) {
-						const selection = editor.getSelection();
+						var selection = editor.getSelection();
 						if (isSelectionBeforeZwsAnchorOfRt(selection)) {
 							normalizeCaret(selection);
 						}
