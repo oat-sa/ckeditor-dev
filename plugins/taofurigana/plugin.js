@@ -602,25 +602,43 @@ CKEDITOR.plugins.add('taofurigana', {
 		 *
 		 * @param {CKEDITOR.dom.range} range
 		 * @param {boolean} searchNext - if true, find adjacent ruby after the range. If false, before the range.
-		 * @returns
+		 * @returns {CKEDITOR.dom.element|null}
 		 */
 		function findAdjacentRuby(range, searchNext) {
 			if (searchNext) {
-				var node = range.endContainer;
-				var nextSibling = node.getNext();
-				if (isRubyNode(nextSibling)) {
-					return nextSibling;
+				var node = range.getBoundaryNodes().endNode;
+				var isAtTheEndOfNode = node && range.checkBoundaryOfElement(node, CKEDITOR.END);
+				if (isAtTheEndOfNode) {
+					var nextSibling = node.getNext();
+					if (isRubyNode(nextSibling)) {
+						return nextSibling;
+					}
 				}
 			} else {
 				//searchPrevious
 				var node = range.startContainer;
+				var offset = range.startOffset;
+				if (node.type !== CKEDITOR.NODE_TEXT) {
+					node = range.getBoundaryNodes().startNode;
+					if (node.type === CKEDITOR.NODE_TEXT && (!node.getText().length || range.checkBoundaryOfElement(node, CKEDITOR.END))) {
+						offset = node.getText().length;
+					} else {
+						return null;
+					}
+				}
 				var prevSibling = node.getPrevious();
-				if (isRubyNode(prevSibling) && isZwsAnchorAfterRuby(node) && range.startOffset <= 1) {
-					return prevSibling;
-				} else if (isZwsAnchorAfterRuby(prevSibling) && range.startOffset === 0) {
-					var prevPrevSibling = prevSibling.getPrevious();
-					if (isRubyNode(prevPrevSibling)) {
-						return prevPrevSibling;
+				if (prevSibling) {
+					if (isRubyNode(prevSibling) && isZwsAnchorAfterRuby(node) && offset <= 1) {
+						return prevSibling;
+					} else if (isEmptyTextNode(node) && offset === 0) {
+						var prevPrevSibling = prevSibling.getPrevious();
+						if (
+							isRubyNode(prevPrevSibling) &&
+							isZwsAnchorAfterRuby(prevSibling) &&
+							prevSibling.getText().length <= 1
+						) {
+							return prevPrevSibling;
+						}
 					}
 				}
 			}
@@ -634,6 +652,13 @@ CKEDITOR.plugins.add('taofurigana', {
 			if (node && node.type === CKEDITOR.NODE_TEXT) {
 				var text = node.getText();
 				return text.length >= 1 && text[0] === zeroWidthSpace && text[1] !== zeroWidthSpace;
+			}
+			return false;
+		}
+
+		function isEmptyTextNode(node) {
+			if (node && node.type === CKEDITOR.NODE_TEXT) {
+				return !node.getText().length;
 			}
 			return false;
 		}
