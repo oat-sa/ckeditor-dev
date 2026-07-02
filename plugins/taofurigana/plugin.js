@@ -672,7 +672,7 @@ CKEDITOR.plugins.add('taofurigana', {
 				return;
 			}
 
-			var rubyList = editor.document.find('ruby');
+			var rubyList = editor.element.find('ruby');
 			if (!rubyList.count()) {
 				return;
 			}
