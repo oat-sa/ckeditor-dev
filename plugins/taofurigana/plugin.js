@@ -355,11 +355,11 @@ CKEDITOR.plugins.add('taofurigana', {
 		}
 
 		/**
-		 * Replace ruby with plain base text and put caret at the end of that text
-		 * so further Backspace deletes the base word normally.
+		 * Replace ruby with its rb contents (preserving inline markup) and put caret
+		 * after the last inserted node so further Backspace deletes the base word normally.
 		 * @param {CKEDITOR.dom.element} rubyElement
 		 * @param {CKEDITOR.dom.selection} [selection]
-		 * @returns {CKEDITOR.dom.text|null}
+		 * @returns {CKEDITOR.dom.node|null}
 		 */
 		function unwrapRubyToBaseText(rubyElement, selection) {
 			if (!rubyElement) {
@@ -368,45 +368,57 @@ CKEDITOR.plugins.add('taofurigana', {
 
 			var rbElements = rubyElement.find('rb');
 			var rbElement = rbElements.count() ? rbElements.getItem(0) : null;
-			var replacement;
+			var nodes = [];
+			var lastNode;
+			var i;
 
-			if (!rbElement) {
-				replacement = new CKEDITOR.dom.text('', editor.document);
-			} else {
-				// Preserve inline markup inside rb (same approach as cleanupEmptyRubyElements).
+			if (rbElement) {
+				// Parse full rb contents so mixed text + inline markup (e.g. 漢<em>字</em>)
+				// is preserved — createFromHtml only keeps the first root node.
 				var rbInnerHtml = rbElement.$.innerHTML.replace(zeroWidthSpaceRegex, '');
 				try {
-					replacement = rbInnerHtml
-						? CKEDITOR.dom.element.createFromHtml(rbInnerHtml, editor.document)
-						: null;
+					if (rbInnerHtml) {
+						var temp = new CKEDITOR.dom.element('div', editor.document);
+						temp.setHtml(rbInnerHtml);
+						var child;
+						while ((child = temp.getFirst())) {
+							nodes.push(child.remove());
+						}
+					}
 				} catch (err) {
-					replacement = null;
-				}
-				if (!replacement || replacement.type === CKEDITOR.NODE_TEXT) {
-					replacement = new CKEDITOR.dom.text(
-						rbElement.getText().replace(zeroWidthSpaceRegex, ''),
-						editor.document
-					);
+					nodes = [];
 				}
 			}
 
-			replacement.replace(rubyElement);
-			cleanupZwsAnchor(replacement.getNext());
-			cleanupOrphanedZwsAfter(replacement);
+			if (!nodes.length) {
+				lastNode = new CKEDITOR.dom.text(
+					rbElement ? rbElement.getText().replace(zeroWidthSpaceRegex, '') : '',
+					editor.document
+				);
+				lastNode.replace(rubyElement);
+			} else {
+				for (i = 0; i < nodes.length; i++) {
+					if (i === 0) {
+						nodes[i].replace(rubyElement);
+					} else {
+						nodes[i].insertAfter(nodes[i - 1]);
+					}
+				}
+				lastNode = nodes[nodes.length - 1];
+			}
+
+			cleanupZwsAnchor(lastNode.getNext());
+			cleanupOrphanedZwsAfter(lastNode);
 			refreshHasRubyFlag();
 
 			if (selection) {
 				var range = new CKEDITOR.dom.range(editor.document);
-				if (replacement.type === CKEDITOR.NODE_TEXT) {
-					range.setStart(replacement, replacement.getText().length);
-				} else {
-					range.moveToElementEditEnd(replacement);
-				}
+				range.setStartAfter(lastNode);
 				range.collapse(true);
 				selection.selectRanges([range]);
 			}
 
-			return replacement;
+			return lastNode;
 		}
 
 		/**

@@ -120,15 +120,17 @@ cmd_status() {
 		echo "BROKEN SETUP: symlink -> $(readlink "$SHARED_LIBS_CKEDITOR")"
 		echo "Run: $(basename "$0") restore"
 	elif [[ -d "$SHARED_LIBS_CKEDITOR" ]]; then
-		local size=""
+		local size
 		local ckeditor_js="$SHARED_LIBS_CKEDITOR/ckeditor.js"
-		if [[ -f "$ckeditor_js" ]]; then
-			size="$(wc -c <"$ckeditor_js" | tr -d ' ')"
+		if [[ ! -f "$ckeditor_js" ]]; then
+			echo "error: ckeditor.js not found at $ckeditor_js" >&2
+			return 1
 		fi
-		if [[ -n "$size" && "$size" -lt 50000 ]]; then
+		size="$(wc -c <"$ckeditor_js" | tr -d ' ')"
+		if [[ "$size" -lt 50000 ]]; then
 			echo "WARNING: ckeditor.js is only ${size} bytes (looks like unbuilt loader). Run restore or sync a build."
 		else
-			echo "Active copy at $SHARED_LIBS_CKEDITOR (ckeditor.js ${size:-?} bytes)"
+			echo "Active copy at $SHARED_LIBS_CKEDITOR (ckeditor.js ${size} bytes)"
 		fi
 	else
 		echo "Missing: $SHARED_LIBS_CKEDITOR"
