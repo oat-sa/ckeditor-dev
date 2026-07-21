@@ -1,4 +1,4 @@
-CKEDITOR.plugins.setLang( 'rubyFurigana', 'en', {
+CKEDITOR.plugins.setLang( 'taofurigana', 'en', {
 	button: 'Insert Furigana (Ruby)',
 	title: 'Insert Furigana (Ruby)'
 } );
