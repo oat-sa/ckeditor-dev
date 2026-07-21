@@ -44,6 +44,11 @@ The built versions checksums aren't identical because the source code contains t
 
 #### CK Playground
 - To use the uncompiled version of CK for development purposes, please use `--unminified` flag: `./build.sh --unminified `
+- For furigana/ruby work, open [`samples/taofurigana.html`](samples/taofurigana.html) in a browser (dev loader — no build). Edit `plugins/taofurigana/plugin.js` and refresh.
+- To test inside qtiCreator: build then sync (do **not** symlink the unbuilt tree — the web server cannot serve paths outside the docroot, and TAO needs the built `ckeditor.js` where `taofurigana` is compiled in):
+  1. `cd dev/builder && ./build.sh --unminified`
+  2. `./scripts/link-to-tao.sh sync`
+  3. Hard-refresh backoffice; `./scripts/link-to-tao.sh restore` when done.
 
 #### TAO Skin
 - If you need to modify TAO skin, you'll find the SASS source files in [`@oat-sa/tao-core-ui-fe`](https://github.com/oat-sa/tao-core-ui-fe/tree/master/scss/ckeditor/skins/tao/scss). They are not in this repo.
