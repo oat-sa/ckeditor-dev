@@ -995,7 +995,7 @@ CKEDITOR.plugins.add('taofurigana', {
 		/**
 		 * Chrome issue: if caret is after ruby and you press Backspace, *all content*
 		 * before caret can be deleted. Move caret into rt end instead so deletion is local.
-		 * Empty reading unwraps to base text (INF-530).
+		 * Empty reading unwraps to base text.
 		 * @param {CKEDITOR.dom.selection} selection
 		 * @param {Number} keyCode
 		 * @returns {Boolean}
