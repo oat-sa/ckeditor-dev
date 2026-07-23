@@ -866,6 +866,151 @@ CKEDITOR.plugins.add('taofurigana', {
 		}
 
 		/**
+		 * Previous DOM node before `node`, crossing empty parents up to the editable
+		 * (mirror of getNextNodeCrossingBoundaries for Enter / previous-block cases).
+		 * @param {CKEDITOR.dom.node} node
+		 * @returns {CKEDITOR.dom.node|null}
+		 */
+		function getPreviousNodeCrossingBoundaries(node) {
+			if (!node) {
+				return null;
+			}
+
+			var previous = node.getPrevious();
+			if (previous) {
+				return previous;
+			}
+
+			var parent = node.getParent();
+			var editable = editor.editable();
+			while (parent && editable && !parent.equals(editable)) {
+				previous = parent.getPrevious();
+				if (previous) {
+					return previous;
+				}
+				parent = parent.getParent();
+			}
+
+			return null;
+		}
+
+		/**
+		 * Node immediately before the collapsed range start, if caret is at that node's edge.
+		 * @param {CKEDITOR.dom.range} range
+		 * @returns {CKEDITOR.dom.node|null}
+		 */
+		function getNodeBeforeRangeStart(range) {
+			if (!range || !range.startContainer) {
+				return null;
+			}
+
+			var container = range.startContainer;
+			var offset = range.startOffset;
+
+			if (container.type === CKEDITOR.NODE_TEXT) {
+				if (offset > 0) {
+					return null;
+				}
+				return getPreviousNodeCrossingBoundaries(container);
+			}
+
+			if (offset > 0) {
+				return container.getChild(offset - 1);
+			}
+
+			return getPreviousNodeCrossingBoundaries(container);
+		}
+
+		/**
+		 * Find a ruby that ends just before the caret across a line break / block boundary.
+		 * Used when Enter left the caret on the next line and native Backspace would wipe
+		 * the whole previous line (Chrome + trailing ZWS after ruby).
+		 * @param {CKEDITOR.dom.range} range
+		 * @returns {CKEDITOR.dom.element|null}
+		 */
+		function findRubyBeforeAcrossBoundaries(range) {
+			if (!range) {
+				return null;
+			}
+
+			var atBlockStart = range.checkStartOfBlock && range.checkStartOfBlock();
+			var atTextStart =
+				range.startContainer &&
+				range.startContainer.type === CKEDITOR.NODE_TEXT &&
+				range.startOffset === 0;
+			var atElementStart =
+				range.startContainer &&
+				range.startContainer.type === CKEDITOR.NODE_ELEMENT &&
+				range.startOffset === 0;
+
+			if (!atBlockStart && !atTextStart && !atElementStart) {
+				return null;
+			}
+
+			var node = getNodeBeforeRangeStart(range);
+			var guard = 0;
+
+			while (node && guard < 50) {
+				guard++;
+
+				if (isRubyNode(node)) {
+					return node;
+				}
+
+				if (isZwsAnchorAfterRuby(node) && isRubyNode(node.getPrevious())) {
+					return node.getPrevious();
+				}
+
+				if (isEmptyTextNode(node)) {
+					node = getPreviousNodeCrossingBoundaries(node);
+					continue;
+				}
+
+				if (node.type === CKEDITOR.NODE_ELEMENT) {
+					var name = node.getName && node.getName();
+					if (name === 'br') {
+						node = getPreviousNodeCrossingBoundaries(node);
+						continue;
+					}
+
+					var last = node.getLast && node.getLast();
+					if (last) {
+						node = last;
+						continue;
+					}
+
+					node = getPreviousNodeCrossingBoundaries(node);
+					continue;
+				}
+
+				break;
+			}
+
+			return null;
+		}
+
+		/**
+		 * After moving caret back onto the ruby line, drop an empty block left by Enter.
+		 * @param {CKEDITOR.dom.element} block
+		 */
+		function removeEmptyBlockLeftByEnter(block) {
+			if (!block || !block.getParent || !block.getParent()) {
+				return;
+			}
+
+			if (block.findOne('ruby') || block.findOne('img') || block.findOne('table')) {
+				return;
+			}
+
+			var text = block.getText().replace(zeroWidthSpaceRegex, '').replace(/\u00a0/g, '').trim();
+			if (text) {
+				return;
+			}
+
+			block.remove();
+		}
+
+		/**
 		 * True when node is a trailing-ruby ZWS that is no longer immediately after a ruby
 		 * (e.g. Enter moved it onto the next line before ruby was removed).
 		 * @param {CKEDITOR.dom.node} node
@@ -996,6 +1141,8 @@ CKEDITOR.plugins.add('taofurigana', {
 		 * Chrome issue: if caret is after ruby and you press Backspace, *all content*
 		 * before caret can be deleted. Move caret into rt end instead so deletion is local.
 		 * Empty reading unwraps to base text.
+		 * Also covers Enter then Backspace from the next line: native delete would wipe the
+		 * whole previous line including the ruby — move caret back after the ruby instead.
 		 * @param {CKEDITOR.dom.selection} selection
 		 * @param {Number} keyCode
 		 * @returns {Boolean}
@@ -1010,7 +1157,9 @@ CKEDITOR.plugins.add('taofurigana', {
 				return false;
 			}
 
-			var rubyElement = findAdjacentRuby(range, false);
+			var rubySameLine = findAdjacentRuby(range, false);
+			var rubyAcrossBreak = rubySameLine ? null : findRubyBeforeAcrossBoundaries(range);
+			var rubyElement = rubySameLine || rubyAcrossBreak;
 			if (!rubyElement) {
 				return false;
 			}
@@ -1018,6 +1167,22 @@ CKEDITOR.plugins.add('taofurigana', {
 			var rtElement = rubyElement.findOne('rt');
 			if (!rtElement) {
 				return false;
+			}
+
+			// Enter left caret on the next line: undo that jump without native Backspace
+			// (which Chrome turns into a whole-line delete when a ZWS follows ruby).
+			if (rubyAcrossBreak) {
+				editor.fire('saveSnapshot');
+				editor.fire('lockSnapshot');
+				try {
+					var path = range.startPath && range.startPath();
+					var block = path && path.block;
+					placeCaretAfterRuby(rubyElement);
+					removeEmptyBlockLeftByEnter(block);
+				} finally {
+					editor.fire('unlockSnapshot');
+				}
+				return true;
 			}
 
 			// Empty reading: unwrap to base text instead of entering a ZWS-only rt.
