@@ -20,6 +20,11 @@ CKEDITOR.plugins.add('taofurigana', {
 		var keyCodeBackspace = 8;
 		var keyCodeLeftArrow = 37;
 		var keyCodeRightArrow = 39;
+		// Safety cap for DOM walks that cross <br>/blocks looking for orphan ZWS.
+		var orphanZwsWalkLimit = 50;
+		// Debounce delays for toolbar/command state updates (ms).
+		var commandStateDebounceMs = 50;
+		var toolbarDisableDelayMs = 150;
 		var refreshCommandStateTimer = null;
 		var disableToolbarButtonsTimer = null;
 		var lastFuriganaCommandState = null;
@@ -557,7 +562,7 @@ CKEDITOR.plugins.add('taofurigana', {
 			var rtElement = startNode.getAscendant('rt', true);
 
 			// Do not re-seed ZWS into an empty rt — that causes Backspace to thrash
-			// textLen 0↔1 forever (see INF-530 probe). New rubies get anchors at create time.
+			// textLen 0↔1 forever. New rubies get anchors at create time.
 			if (rtElement && !isEffectivelyEmpty(rtElement)) {
 				ensureRtAnchors(rtElement);
 			}
@@ -950,7 +955,7 @@ CKEDITOR.plugins.add('taofurigana', {
 			var node = getNodeBeforeRangeStart(range);
 			var guard = 0;
 
-			while (node && guard < 50) {
+			while (node && guard < orphanZwsWalkLimit) {
 				guard++;
 
 				if (isRubyNode(node)) {
@@ -1034,14 +1039,16 @@ CKEDITOR.plugins.add('taofurigana', {
 			var node = getNextNodeCrossingBoundaries(fromNode);
 			var guard = 0;
 
-			while (node && guard < 50) {
+			while (node && guard < orphanZwsWalkLimit) {
 				guard++;
 
+				// Found the orphan ZWS left after ruby was removed / split by Enter.
 				if (isOrphanZwsAnchor(node)) {
 					cleanupZwsAnchor(node);
 					return true;
 				}
 
+				// Skip empty text nodes between the start and the orphan.
 				if (isEmptyTextNode(node)) {
 					node = getNextNodeCrossingBoundaries(node);
 					continue;
@@ -1049,6 +1056,7 @@ CKEDITOR.plugins.add('taofurigana', {
 
 				if (node.type === CKEDITOR.NODE_ELEMENT) {
 					var name = node.getName && node.getName();
+					// Soft line break — keep walking past it.
 					if (name === 'br') {
 						node = getNextNodeCrossingBoundaries(node);
 						continue;
@@ -1056,6 +1064,7 @@ CKEDITOR.plugins.add('taofurigana', {
 
 					var first = node.getFirst && node.getFirst();
 					if (first) {
+						// Orphan ZWS sitting as the first child of the next block/wrapper.
 						if (isOrphanZwsAnchor(first)) {
 							cleanupZwsAnchor(first);
 							return true;
@@ -1065,6 +1074,7 @@ CKEDITOR.plugins.add('taofurigana', {
 						continue;
 					}
 
+					// Empty element with no children — step to the next sibling/parent boundary.
 					node = getNextNodeCrossingBoundaries(node);
 					continue;
 				}
@@ -1077,13 +1087,14 @@ CKEDITOR.plugins.add('taofurigana', {
 		}
 
 		/**
-		 * Chrome can delete a whole line when Backspace hits an orphan ZWS left after
+		 * Blink/Chrome can delete a whole line when Backspace hits an orphan ZWS left after
 		 * ruby removal across a line break. Strip that ZWS before native delete runs.
 		 * @param {CKEDITOR.dom.selection} selection
 		 * @param {Number} keyCode
 		 * @returns {Boolean}
 		 */
 		function guardOrphanZwsBackspace(selection, keyCode) {
+			// Only collapsed Backspace — native Delete / ranged selection are left alone.
 			if (keyCode !== keyCodeBackspace || !selection || !selection.isCollapsed()) {
 				return false;
 			}
@@ -1099,6 +1110,7 @@ CKEDITOR.plugins.add('taofurigana', {
 
 			editor.fire('lockSnapshot');
 			try {
+				// Caret is inside an orphan ZWS text node (offset at/near its start).
 				if (
 					startContainer.type === CKEDITOR.NODE_TEXT &&
 					isOrphanZwsAnchor(startContainer) &&
@@ -1107,6 +1119,7 @@ CKEDITOR.plugins.add('taofurigana', {
 					cleanupZwsAnchor(startContainer);
 					cleaned = true;
 				} else if (startContainer.type === CKEDITOR.NODE_ELEMENT && startOffset === 0) {
+					// Caret at the start of an element whose first child is the orphan ZWS.
 					var child = startContainer.getChild(startOffset);
 					if (isOrphanZwsAnchor(child)) {
 						cleanupZwsAnchor(child);
@@ -1123,6 +1136,7 @@ CKEDITOR.plugins.add('taofurigana', {
 					var atEndOfBlock = range.checkEndOfBlock && range.checkEndOfBlock();
 
 					if (atEndOfText || atEndOfBlock) {
+						// Caret at end of text or block — orphan may sit after a <br>/next paragraph.
 						var next = getNextNodeCrossingBoundaries(startContainer);
 						var nextFirst = next && next.type === CKEDITOR.NODE_ELEMENT && next.getFirst ? next.getFirst() : null;
 						if (isOrphanZwsAnchor(next) || isOrphanZwsAnchor(nextFirst)) {
@@ -1584,8 +1598,7 @@ CKEDITOR.plugins.add('taofurigana', {
 
 		/**
 		 * Change command state according to the current selection content.
-		 * Debounced: uncanceled setTimeout(150) on every keyup was stacking and making
-		 * Backspace/Delete feel progressively slower until blur drained the queue.
+		 * Debounced so rapid keyup events do not stack redundant toolbar updates.
 		 * @param {CkEditor} editor - ckEditor instance
 		 * @param {Boolean} [immediate]
 		 */
@@ -1597,7 +1610,7 @@ CKEDITOR.plugins.add('taofurigana', {
 				refreshCommandStateTimer = setTimeout(function () {
 					refreshCommandStateTimer = null;
 					refreshCommandStateNow(editor);
-				}, 50);
+				}, commandStateDebounceMs);
 				return;
 			}
 
@@ -1658,7 +1671,7 @@ CKEDITOR.plugins.add('taofurigana', {
 					statelessButtons.forEach(function (button) {
 						button.setState(CKEDITOR.TRISTATE_OFF);
 					});
-				}, 150);
+				}, toolbarDisableDelayMs);
 			}
 
 			if (!command) {
