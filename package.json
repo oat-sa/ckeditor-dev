@@ -12,7 +12,6 @@
 		"cksource-samples-framework": "^1.0.1",
 		"grunt": "^1.0.1",
 		"grunt-contrib-concat": "^1.0.0",
-		"grunt-contrib-imagemin": "^2.0.1",
 		"grunt-contrib-jshint": "^1.0.0",
 		"grunt-contrib-less": "^2.0.0",
 		"grunt-contrib-watch": "^1.0.0",
@@ -24,7 +23,17 @@
 		"shelljs": "^0.8.2"
 	},
 	"overrides": {
-		"handlebars": "^4.7.7"
+		"handlebars": "4.7.9",
+		"morgan": "1.12.1",
+		"lodash": "4.18.1",
+		"minimist": "1.2.8",
+		"form-data": "2.5.6",
+		"websocket-driver": "0.7.5",
+		"plist": "3.1.1",
+		"underscore": "1.13.8",
+		"getobject": "1.1.1",
+		"xmldom": "npm:@xmldom/xmldom@0.8.15",
+		"@xmldom/xmldom": "0.8.15"
 	},
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1"
