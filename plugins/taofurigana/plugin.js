@@ -1016,12 +1016,17 @@ CKEDITOR.plugins.add('taofurigana', {
 		}
 
 		/**
-		 * True when node is a trailing-ruby ZWS that is no longer immediately after a ruby
-		 * (e.g. Enter moved it onto the next line before ruby was removed).
+		 * True when node is a trailing-ruby ZWS outside a ruby that is no longer immediately
+		 * after a ruby (e.g. an anchor left orphaned by ruby removal / Enter).
+		 * ZWS anchors inside a ruby (rt start/end placeholders) are never orphans.
 		 * @param {CKEDITOR.dom.node} node
 		 * @returns {Boolean}
 		 */
 		function isOrphanZwsAnchor(node) {
+			if (!node || (node.getAscendant && (node.getAscendant('rt') || node.getAscendant('ruby')))) {
+				return false;
+			}
+
 			return isZwsAnchorAfterRuby(node) && !isRubyNode(node.getPrevious());
 		}
 
